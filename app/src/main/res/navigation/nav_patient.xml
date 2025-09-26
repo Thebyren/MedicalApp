@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_patient"
+    app:startDestination="@id/patientListFragment">
+
+    <!-- Patient List -->
+    <fragment
+        android:id="@+id/patientListFragment"
+        android:name="com.medical.app.ui.patient.PatientListFragment"
+        android:label="@string/patients"
+        tools:layout="@layout/fragment_patient_list">
+        
+        <action
+            android:id="@+id/action_patientList_to_addPatientFragment"
+            app:destination="@id/addEditPatientFragment"
+            app:popUpTo="@id/patientListFragment"
+            app:popUpToInclusive="false" />
+            
+        <action
+            android:id="@+id/action_patientList_to_patientDetailFragment"
+            app:destination="@id/patientDetailFragment"
+            app:popUpTo="@id/patientListFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Add/Edit Patient -->
+    <fragment
+        android:id="@+id/addEditPatientFragment"
+        android:name="com.medical.app.ui.patient.AddEditPatientFragment"
+        android:label="@string/add_patient"
+        tools:layout="@layout/fragment_add_edit_patient">
+        <argument
+            android:name="patientId"
+            app:argType="string"
+            android:defaultValue=""
+            app:nullable="true" />
+            
+        <action
+            android:id="@+id/action_addEditPatient_to_patientDetailFragment"
+            app:destination="@id/patientDetailFragment"
+            app:popUpTo="@id/patientListFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Patient Detail -->
+    <fragment
+        android:id="@+id/patientDetailFragment"
+        android:name="com.medical.app.ui.patient.PatientDetailFragment"
+        android:label="@string/patient_details"
+        tools:layout="@layout/fragment_patient_detail">
+        <argument
+            android:name="patientId"
+            app:argType="string"
+            app:nullable="false" />
+            
+        <action
+            android:id="@+id/action_patientDetail_to_addEditPatient"
+            app:destination="@id/addEditPatientFragment"
+            app:popUpTo="@id/patientDetailFragment"
+            app:popUpToInclusive="false" 
+            app:popUpToSaveState="true">
+            <argument
+                android:name="patientId"
+                app:argType="string"
+                android:defaultValue=""
+                app:nullable="true"
+                app:defaultValue="@null" />
+        </action>
+    </fragment>
+
+</navigation>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="48dp">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivEmptyIcon"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@color/light_grey_100"
+        android:contentDescription="@null"
+        android:padding="16dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_patient"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Circle"
+        app:strokeColor="@color/colorPrimary"
+        app:strokeWidth="1dp"
+        app:tint="@color/colorPrimary"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/tvEmptyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceSubtitle1"
+        android:textColor="?android:attr/textColorPrimary"
+        tools:text="No se encontraron pacientes" />
+
+    <TextView
+        android:id="@+id/tvEmptySubtext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceBody2"
+        android:textColor="?android:attr/textColorSecondary"
+        tools:text="Presiona el botón + para agregar un nuevo paciente" />
+
+</merge>

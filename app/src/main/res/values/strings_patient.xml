@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Patient List -->
+    <string name="patients">Pacientes</string>
+    <string name="search_patients">Buscar pacientes…</string>
+    <string name="no_patients_found">No se encontraron pacientes</string>
+    <string name="add_patient">Agregar paciente</string>
+    <string name="patient_details">Detalles del paciente</string>
+    <string name="edit_patient">Editar paciente</string>
+    
+    <!-- Patient Fields -->
+    <string name="first_name">Nombre</string>
+    <string name="last_name">Apellido</string>
+    <string name="date_of_birth">Fecha de nacimiento</string>
+    <string name="gender">Género</string>
+    <string name="phone_number">Teléfono</string>
+    <string name="email">Correo electrónico</string>
+    <string name="address">Dirección</string>
+    <string name="blood_type">Tipo de sangre</string>
+    <string name="allergies">Alergias</string>
+    <string name="notes">Notas</string>
+    
+    <!-- Genders -->
+    <string name="male">Masculino</string>
+    <string name="female">Femenino</string>
+    <string name="other">Otro</string>
+    
+    <!-- Actions -->
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="search">Buscar</string>
+    <string name="filter">Filtrar</string>
+    <string name="sort">Ordenar</string>
+    
+    <!-- Messages -->
+    <string name="patient_saved_successfully">Paciente guardado exitosamente</string>
+    <string name="patient_deleted_successfully">Paciente eliminado exitosamente</string>
+    <string name="delete_patient">Eliminar paciente</string>
+    <string name="delete_patient_confirmation">¿Estás seguro de que deseas eliminar a este paciente? Esta acción no se puede deshacer.</string>
+    
+    <!-- Patient Info -->
+    <string name="personal_information">Información personal</string>
+    <string name="contact_information">Información de contacto</string>
+    <string name="medical_information">Información médica</string>
+    <string name="last_updated_format">Última actualización: %s</string>
+    <string name="patient_info_format">%1$s • %2$s</string>
+    
+    <!-- Placeholders -->
+    <string name="not_specified">No especificado</string>
+    <string name="none">Ninguno</string>
+    
+    <!-- Buttons -->
+    <string name="new_appointment">Nueva cita</string>
+    <string name="appointments">Citas</string>
+    <string name="prescriptions">Recetas</string>
+</resources>
