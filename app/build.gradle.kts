@@ -154,4 +154,7 @@ dependencies {
     // Truth para aserciones más legibles
     testImplementation("com.google.truth:truth:1.1.5")
     androidTestImplementation("com.google.truth:truth:1.1.5")
+
+    // SwipeRefreshLayout
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
