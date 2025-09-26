@@ -85,9 +85,7 @@
     <string name="medico">Médico</string>
     <string name="especialidad">Especialidad</string>
     <string name="motivo">Motivo</string>
-    <string name="tratamiento">Tratamiento</string>
     <string name="notas">Notas</string>
-    <string name="proxima_cita">Próxima cita</string>
     <string name="sin_proxima_cita">No hay próxima cita programada</string>
     <string name="compartir_consulta">Compartir consulta</string>
     <string name="exportar_pdf">Exportar a PDF</string>

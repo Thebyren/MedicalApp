@@ -1,4 +1,3 @@
-<!-- res/values/colors.xml -->
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Colores principales -->
@@ -27,4 +26,7 @@
     <color name="red_500">#F44336</color>
     <color name="teal_500">#009688</color>
     <color name="grey_600">#757575</color>
+    <color name="light_red_100">#8A4C47</color>
+    <color name="light_teal_100">#8BC34A</color>
+    <color name="light_grey_200">#B9F6CA</color>
 </resources>
