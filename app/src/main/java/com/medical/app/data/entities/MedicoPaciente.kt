@@ -26,7 +26,7 @@ import java.util.Date
     indices = [
         Index("medicoId"),
         Index("pacienteId"),
-        Index(["medicoId", "pacienteId"], unique = true)
+        Index(value = ["medicoId", "pacienteId"], unique = true)
     ]
 )
 data class MedicoPaciente(

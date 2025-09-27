@@ -1,0 +1,646 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "67efb068351171fdd7d1f35401fb4852",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombreCompleto` TEXT NOT NULL, `email` TEXT NOT NULL, `passwordHash` TEXT NOT NULL, `salt` TEXT, `tipoUsuario` TEXT NOT NULL, `fechaCreacion` INTEGER NOT NULL, `activo` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreCompleto",
+            "columnName": "nombreCompleto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passwordHash",
+            "columnName": "passwordHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "salt",
+            "columnName": "salt",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "tipoUsuario",
+            "columnName": "tipoUsuario",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCreacion",
+            "columnName": "fechaCreacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "medicos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `usuarioId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `apellidos` TEXT NOT NULL, `especialidad` TEXT NOT NULL, `numeroColegiado` TEXT NOT NULL, `telefono` TEXT, `hospitalClinica` TEXT, FOREIGN KEY(`usuarioId`) REFERENCES `usuarios`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usuarioId",
+            "columnName": "usuarioId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "especialidad",
+            "columnName": "especialidad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "numeroColegiado",
+            "columnName": "numeroColegiado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hospitalClinica",
+            "columnName": "hospitalClinica",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medicos_usuarioId",
+            "unique": true,
+            "columnNames": [
+              "usuarioId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medicos_usuarioId` ON `${TABLE_NAME}` (`usuarioId`)"
+          },
+          {
+            "name": "index_medicos_numeroColegiado",
+            "unique": true,
+            "columnNames": [
+              "numeroColegiado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medicos_numeroColegiado` ON `${TABLE_NAME}` (`numeroColegiado`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "usuarios",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "usuarioId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pacientes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `usuarioId` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `apellidos` TEXT NOT NULL, `fechaNacimiento` INTEGER NOT NULL, `genero` TEXT, `telefono` TEXT, `direccion` TEXT, `numeroSeguridadSocial` TEXT, `contactoEmergencia` TEXT, `telefonoEmergencia` TEXT, `email` TEXT NOT NULL, `bloodType` TEXT NOT NULL, `allergies` TEXT NOT NULL, `notes` TEXT NOT NULL, FOREIGN KEY(`usuarioId`) REFERENCES `usuarios`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usuarioId",
+            "columnName": "usuarioId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaNacimiento",
+            "columnName": "fechaNacimiento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "genero",
+            "columnName": "genero",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "numeroSeguridadSocial",
+            "columnName": "numeroSeguridadSocial",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "contactoEmergencia",
+            "columnName": "contactoEmergencia",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "telefonoEmergencia",
+            "columnName": "telefonoEmergencia",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bloodType",
+            "columnName": "bloodType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allergies",
+            "columnName": "allergies",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pacientes_usuarioId",
+            "unique": true,
+            "columnNames": [
+              "usuarioId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_pacientes_usuarioId` ON `${TABLE_NAME}` (`usuarioId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "usuarios",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "usuarioId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "medico_paciente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`medicoId` INTEGER NOT NULL, `pacienteId` INTEGER NOT NULL, `fechaAsignacion` INTEGER NOT NULL, `activo` INTEGER NOT NULL, PRIMARY KEY(`medicoId`, `pacienteId`), FOREIGN KEY(`medicoId`) REFERENCES `medicos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "medicoId",
+            "columnName": "medicoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaAsignacion",
+            "columnName": "fechaAsignacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "medicoId",
+            "pacienteId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medico_paciente_medicoId",
+            "unique": false,
+            "columnNames": [
+              "medicoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medico_paciente_medicoId` ON `${TABLE_NAME}` (`medicoId`)"
+          },
+          {
+            "name": "index_medico_paciente_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medico_paciente_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          },
+          {
+            "name": "index_medico_paciente_medicoId_pacienteId",
+            "unique": true,
+            "columnNames": [
+              "medicoId",
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medico_paciente_medicoId_pacienteId` ON `${TABLE_NAME}` (`medicoId`, `pacienteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "medicos",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medicoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "pacientes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "consultas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `medicoId` INTEGER NOT NULL, `pacienteId` INTEGER NOT NULL, `fechaConsulta` INTEGER NOT NULL, `motivoConsulta` TEXT NOT NULL, `diagnostico` TEXT, `observaciones` TEXT, `proximaCita` INTEGER, `fechaCreacion` INTEGER NOT NULL, FOREIGN KEY(`medicoId`) REFERENCES `medicos`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicoId",
+            "columnName": "medicoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaConsulta",
+            "columnName": "fechaConsulta",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivoConsulta",
+            "columnName": "motivoConsulta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnostico",
+            "columnName": "diagnostico",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "proximaCita",
+            "columnName": "proximaCita",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "fechaCreacion",
+            "columnName": "fechaCreacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_consultas_medicoId",
+            "unique": false,
+            "columnNames": [
+              "medicoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_consultas_medicoId` ON `${TABLE_NAME}` (`medicoId`)"
+          },
+          {
+            "name": "index_consultas_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_consultas_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "medicos",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medicoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "pacientes",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "tratamientos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `consultaId` INTEGER NOT NULL, `medicamento` TEXT NOT NULL, `dosis` TEXT NOT NULL, `frecuencia` TEXT NOT NULL, `duracionDias` INTEGER, `indicaciones` TEXT, FOREIGN KEY(`consultaId`) REFERENCES `consultas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consultaId",
+            "columnName": "consultaId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicamento",
+            "columnName": "medicamento",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosis",
+            "columnName": "dosis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frecuencia",
+            "columnName": "frecuencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duracionDias",
+            "columnName": "duracionDias",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "indicaciones",
+            "columnName": "indicaciones",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tratamientos_consultaId",
+            "unique": false,
+            "columnNames": [
+              "consultaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tratamientos_consultaId` ON `${TABLE_NAME}` (`consultaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "consultas",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "consultaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "historial_medico",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `pacienteId` INTEGER NOT NULL, `tipoRegistro` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `fechaRegistro` INTEGER NOT NULL, `activo` INTEGER NOT NULL, FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoRegistro",
+            "columnName": "tipoRegistro",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_historial_medico_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_historial_medico_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "pacientes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '67efb068351171fdd7d1f35401fb4852')"
+    ]
+  }
+}

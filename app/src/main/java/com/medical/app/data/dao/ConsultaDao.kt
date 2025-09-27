@@ -2,7 +2,7 @@ package com.medical.app.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.medical.app.data.model.Consulta
+import com.medical.app.data.entities.Consulta
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
