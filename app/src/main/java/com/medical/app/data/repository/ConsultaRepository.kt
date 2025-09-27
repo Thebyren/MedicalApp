@@ -1,6 +1,6 @@
 package com.medical.app.data.repository
 
-import com.medical.app.data.local.dao.ConsultaDao
+import com.medical.app.data.dao.ConsultaDao
 import com.medical.app.data.model.Consulta
 import kotlinx.coroutines.flow.Flow
 import java.util.*

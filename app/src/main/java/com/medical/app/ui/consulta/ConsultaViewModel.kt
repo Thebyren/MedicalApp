@@ -111,15 +111,15 @@ class ConsultaViewModel @Inject constructor(
     fun loadConsultaDetalle(consultaId: Int) {
         viewModelScope.launch {
             setState(ConsultaState.Loading)
-            
+
             try {
-                val consulta = consultaRepository.getById(consultaId)
+                val consulta = consultaRepository.getConsultaById(consultaId.toLong()) // Corregido
                 if (consulta != null) {
                     // Cargar información relacionada en paralelo
                     val medico = medicoRepository.getById(consulta.medicoId)
                     val paciente = pacienteRepository.getById(consulta.pacienteId)
                     val tratamientos = tratamientoRepository.getByConsultaId(consultaId)
-                    
+
                     setState(
                         ConsultaState.ConsultaDetalle(
                             consulta = consulta,
@@ -137,7 +137,6 @@ class ConsultaViewModel @Inject constructor(
             }
         }
     }
-
     /**
      * Crea o actualiza una consulta.
      */
@@ -170,9 +169,9 @@ class ConsultaViewModel @Inject constructor(
     fun deleteConsulta(consultaId: Int) {
         viewModelScope.launch {
             setState(ConsultaState.Loading)
-            
+
             try {
-                val consulta = consultaRepository.getById(consultaId)
+                val consulta = consultaRepository.getConsultaById(consultaId.toLong()) // Corregido
                 if (consulta != null) {
                     val result = consultaRepository.delete(consulta)
                     if (result > 0) {

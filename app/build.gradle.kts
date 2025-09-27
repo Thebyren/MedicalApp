@@ -1,8 +1,9 @@
 plugins {
-    id("com.android.application")
+    alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
-    id("androidx.navigation.safeargs")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.navigation.safeargs)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -38,6 +39,7 @@ android {
     
     // Habilitar el uso de ViewBinding
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
     
@@ -49,112 +51,75 @@ android {
 
 dependencies {
     // Dependencias principales de Android
+    implementation(libs.hilt.android)
+    implementation(libs.firebase.appdistribution.gradle)
+    ksp(libs.hilt.compiler)
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     
+    // Glide for image loading
+    implementation(libs.glide)
+    ksp(libs.glide.compiler)
+    
     // Room components
-    val roomVersion = "2.6.1"
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    implementation("androidx.room:room-paging:$roomVersion")
-    kapt("androidx.room:room-compiler:$roomVersion") // Para integración con Paging 3
-    kapt("androidx.room:room-compiler:$roomVersion")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
+    ksp(libs.androidx.room.compiler)
     
     // Lifecycle components (ViewModel & LiveData)
-    val lifecycleVersion = "2.6.2"
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.lifecycle.runtime.ktx)
     
     // Navigation Component
-    val navVersion = "2.7.5"
-    implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
-    implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
+    // Navigation Component - Replace with catalog aliases 
+    implementation(libs.navigation.fragment.ktx)
+    implementation(libs.security.crypto)
+    implementation(libs.security.crypto.ktx) 
     
-    // Paging 3
-    val pagingVersion = "3.2.1"
-    implementation("androidx.paging:paging-runtime-ktx:$pagingVersion")
+    // ... 
     
-    // RecyclerView
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    
-    // Material Design Components
-    implementation("com.google.android.material:material:1.10.0")
-    
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
-    // Dependencias para autenticación
-    implementation("androidx.security:security-crypto:1.1.0-alpha06") // Para encriptación segura
-    implementation("com.google.code.gson:gson:2.10.1") // Para serialización/deserialización
-    implementation("androidx.datastore:datastore-preferences:1.0.0") // Para almacenamiento seguro de preferencias
-    
-    // ===== Dependencias para pruebas =====
-    
-    // Dependencias básicas de JUnit
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    
-    // Coroutines Test
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") {
-        // Solución para conflictos con coroutines-core
-        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-debug")
-    }
-    
-    // MockK para pruebas unitarias
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("io.mockk:mockk-android:1.13.8")
-    
-    // MockK para pruebas instrumentadas
-    androidTestImplementation("io.mockk:mockk-android:1.13.8")
-    
-    // Arquitectura Components - Testing
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    
-    // LiveData testing
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    
-    // Room testing
-    testImplementation("androidx.room:room-testing:$roomVersion")
-    
-    // Fragment testing
-    debugImplementation("androidx.fragment:fragment-testing:1.6.2")
-    
-    // Navigation testing
-    androidTestImplementation("androidx.navigation:navigation-testing:$navVersion")
+    // Navigation testing - Replace with catalog alias 
+    androidTestImplementation(libs.navigation.testing)
     
     // Espresso para pruebas de UI
     androidTestImplementation(libs.espresso.core)
-    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1")
-    androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
+    androidTestImplementation(libs.espresso.contrib)
+    androidTestImplementation(libs.espresso.intents)
     
     // Reglas y runners para pruebas instrumentadas
-    androidTestImplementation("androidx.test:rules:1.5.0")
-    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation(libs.rules)
+    androidTestImplementation(libs.runner)
     
     // Hilt testing
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.48")
-    kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.48")
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
     
     // MockWebServer para pruebas de red
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
+    testImplementation(libs.mockwebserver)
     
     // Turbine para probar Flows
-    testImplementation("app.cash.turbine:turbine:1.0.0")
+    testImplementation(libs.turbine)
     
     // Robolectric para pruebas unitarias de Android
-    testImplementation("org.robolectric:robolectric:4.10.3")
+    testImplementation(libs.robolectric)
     
     // Mockito para pruebas unitarias
-    testImplementation("org.mockito:mockito-core:5.5.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
     
     // Truth para aserciones más legibles
-    testImplementation("com.google.truth:truth:1.1.5")
-    androidTestImplementation("com.google.truth:truth:1.1.5")
+    testImplementation(libs.google.truth)
+    androidTestImplementation(libs.google.truth)
 
     // SwipeRefreshLayout
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.swiperefreshlayout)
+
+    // web services
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
+    implementation("com.google.code.gson:gson:2.10.1")
 }

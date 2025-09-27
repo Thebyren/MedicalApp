@@ -57,7 +57,7 @@ abstract class BaseViewModel<State : Any, Event : Any> : ViewModel() {
 /**
  * Clase de utilidad para eventos que solo deben ser manejados una vez, como navegación o mensajes.
  */
-class SingleLiveEvent<T> : MutableStateFlow<T?>(null) {
+class SingleLiveEvent<T> : MutableStateFlow<T?> {
     private val pending = MutableStateFlow(false)
     
     override var value: T?

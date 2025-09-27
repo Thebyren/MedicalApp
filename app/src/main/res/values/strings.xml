@@ -89,4 +89,21 @@
     <string name="sin_proxima_cita">No hay próxima cita programada</string>
     <string name="compartir_consulta">Compartir consulta</string>
     <string name="exportar_pdf">Exportar a PDF</string>
+    <string name="password">Contraseña</string>
+    <string name="login">Iniciar Sesión</string>
+    <string name="register_here">Registrarse aquí</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="next_appointment">Próxima cita</string>
+    <string name="view_details">Ver detalles</string>
+    <string name="no_upcoming_appointments">No hay citas próximas</string>
+    <string name="no_upcoming_appointments_desc">Parece que no tienes citas programadas. ¡Programa una ahora!</string>
+    <string name="schedule_appointment">Programar cita</string>
+    <string name="upcoming_appointments">Próximas citas</string>
+    <string name="schedule_new_appointment">Programar nueva cita</string>
+    <string name="no_data_available">No hay datos disponibles</string>
+    <string name="more_options">Más opciones</string>
+    <string name="error_loading_patients">Error al cargar pacientes</string>
+    <string name="error_generico">Algo Salio Mal</string>
+    <string name="descartar">Descartar</string>
 </resources>

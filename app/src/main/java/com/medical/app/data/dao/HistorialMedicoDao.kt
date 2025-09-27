@@ -12,18 +12,18 @@ interface HistorialMedicoDao : BaseDao<HistorialMedico> {
 
     @Query("""
         SELECT * FROM historial_medico 
-        WHERE paciente_id = :pacienteId 
+        WHERE pacienteId = :pacienteId 
         AND activo = 1
-        ORDER BY fecha_registro DESC
+        ORDER BY FechaRegistro DESC
     """)
     fun getHistorialCompleto(pacienteId: Int): LiveData<List<HistorialMedico>>
 
     @Query("""
         SELECT * FROM historial_medico 
-        WHERE paciente_id = :pacienteId 
-        AND tipo_registro = :tipoRegistro
+        WHERE pacienteId = :pacienteId 
+        AND tipoRegistro = :tipoRegistro
         AND activo = 1
-        ORDER BY fecha_registro DESC
+        ORDER BY FechaRegistro DESC
     """)
     fun getHistorialPorTipo(
         pacienteId: Int,
@@ -31,9 +31,9 @@ interface HistorialMedicoDao : BaseDao<HistorialMedico> {
     ): LiveData<List<HistorialMedico>>
 
     @Query("""
-        SELECT DISTINCT tipo_registro 
+        SELECT DISTINCT tipoRegistro 
         FROM historial_medico 
-        WHERE paciente_id = :pacienteId
+        WHERE pacienteId = :pacienteId
         AND activo = 1
     """)
     fun getTiposRegistroActivos(pacienteId: Int): LiveData<List<String>>
@@ -47,10 +47,10 @@ interface HistorialMedicoDao : BaseDao<HistorialMedico> {
 
     @Query("""
         SELECT * FROM historial_medico
-        WHERE paciente_id = :pacienteId
+        WHERE pacienteId = :pacienteId
         AND (descripcion LIKE '%' || :query || '%')
         AND activo = 1
-        ORDER BY fecha_registro DESC
+        ORDER BY FechaRegistro DESC
     """)
     fun buscarEnHistorial(
         pacienteId: Int,

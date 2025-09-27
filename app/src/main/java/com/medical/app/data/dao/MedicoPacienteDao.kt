@@ -5,13 +5,13 @@ import com.medical.app.data.entities.MedicoPaciente
 
 @Dao
 interface MedicoPacienteDao : BaseDao<MedicoPaciente> {
-    @Query("SELECT * FROM medico_paciente WHERE medico_id = :medicoId AND paciente_id = :pacienteId")
+    @Query("SELECT * FROM medico_paciente WHERE medicoId = :medicoId AND pacienteId = :pacienteId")
     suspend fun getRelacion(medicoId: Int, pacienteId: Int): MedicoPaciente?
 
     @Query("""
         UPDATE medico_paciente 
         SET activo = :activo 
-        WHERE medico_id = :medicoId AND paciente_id = :pacienteId
+        WHERE medicoId = :medicoId AND pacienteId = :pacienteId
     """)
     suspend fun actualizarEstadoRelacion(
         medicoId: Int,
@@ -22,8 +22,8 @@ interface MedicoPacienteDao : BaseDao<MedicoPaciente> {
     @Query("""
         SELECT COUNT(*) 
         FROM medico_paciente 
-        WHERE medico_id = :medicoId 
-        AND paciente_id = :pacienteId
+        WHERE medicoId = :medicoId 
+        AND pacienteId = :pacienteId
         AND activo = 1
     """)
     suspend fun existeRelacionActiva(medicoId: Int, pacienteId: Int): Int

@@ -4,12 +4,14 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import java.util.*
+import com.medical.app.data.entities.Paciente
+import com.medical.app.data.entities.Medico
 
 @Entity(
     tableName = "appointments",
     foreignKeys = [
         ForeignKey(
-            entity = Patient::class,
+            entity = Paciente::class,
             parentColumns = ["id"],
             childColumns = ["patientId"],
             onDelete = ForeignKey.CASCADE

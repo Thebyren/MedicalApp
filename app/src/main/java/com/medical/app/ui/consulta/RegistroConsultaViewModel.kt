@@ -145,8 +145,16 @@ data class RegistroConsultaUiState(
     val isSuccess: Boolean = false,
     val error: String? = null
 )
+sealed class RegistroConsultaState {
+    object Idle : RegistroConsultaState()
+    object Loading : RegistroConsultaState()
+    object Success : RegistroConsultaState()
+    data class Error(val message: String) : RegistroConsultaState()
+    data class FormValidation(val isFormValid: Boolean) : RegistroConsultaState()
+}
 
 sealed class RegistroConsultaEvent {
+
     data class MotivoChanged(val motivo: String) : RegistroConsultaEvent()
     data class SintomasChanged(val sintomas: String) : RegistroConsultaEvent()
     data class DiagnosticoChanged(val diagnostico: String) : RegistroConsultaEvent()

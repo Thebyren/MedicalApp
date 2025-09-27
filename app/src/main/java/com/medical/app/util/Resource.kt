@@ -1,6 +1,7 @@
 package com.medical.app.util
 
 import androidx.annotation.StringRes
+import com.medical.app.data.remote.api.ApiResponse
 
 /**
  * Clase sellada que representa un recurso que puede estar en diferentes estados:

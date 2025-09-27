@@ -2,7 +2,6 @@ package com.medical.app.data.dao
 
 import androidx.room.*
 
-@Dao
 interface BaseDao<T> {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: T): Long

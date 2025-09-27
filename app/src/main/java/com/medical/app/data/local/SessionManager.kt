@@ -118,11 +118,3 @@ class SessionManager @Inject constructor(
         }
     }
 }
-
-/**
- * Estados posibles de autenticación.
- */
-sealed class AuthState {
-    object Unauthenticated : AuthState()
-    data class Authenticated(val user: Usuario) : AuthState()
-}

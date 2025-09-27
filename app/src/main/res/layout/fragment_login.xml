@@ -104,12 +104,12 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:drawablePadding="4dp"
-                android:drawableStart="@drawable/ic_add_circle"
-                android:drawableTint="@color/colorPrimary"
                 android:padding="8dp"
                 android:text="@string/register_here"
                 android:textColor="@color/colorPrimary"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:drawableStartCompat="@drawable/ic_add_circle"
+                app:drawableTint="@color/colorPrimary" />
 
             <!-- Indicador de carga -->
             <ProgressBar

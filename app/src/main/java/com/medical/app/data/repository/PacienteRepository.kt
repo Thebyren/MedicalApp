@@ -1,5 +1,8 @@
 package com.medical.app.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.medical.app.data.dao.PacienteDao
 import com.medical.app.data.entities.Paciente
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +38,13 @@ class PacienteRepository @Inject constructor(
         return pacienteDao.getAllPacientes()
     }
 
+    fun getPacientesPaginados(query: String): Flow<PagingData<Paciente>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+            pagingSourceFactory = { pacienteDao.getPacientesPagingSource(query) }
+        ).flow
+    }
+
     // Métodos específicos de Paciente
     
     suspend fun getPacienteByUsuarioId(usuarioId: Int): Paciente? {
@@ -51,9 +61,5 @@ class PacienteRepository @Inject constructor(
     
     suspend fun existeNumeroSeguridadSocial(numeroSeguridadSocial: String, excludeId: Int = 0): Boolean {
         return pacienteDao.existeNumeroSeguridadSocial(numeroSeguridadSocial, excludeId) > 0
-    }
-    
-    suspend fun buscarPacientes(query: String): List<Paciente> {
-        return pacienteDao.buscarPacientes(query)
     }
 }

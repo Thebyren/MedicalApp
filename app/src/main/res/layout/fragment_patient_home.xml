@@ -100,6 +100,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_marginEnd="12dp"
+                            android:contentDescription="TODO"
                             android:src="@drawable/ic_calendar"
                             app:tint="?attr/colorPrimary" />
 
@@ -169,6 +170,7 @@
                     <ImageView
                         android:layout_width="72dp"
                         android:layout_height="72dp"
+                        android:contentDescription="TODO"
                         android:src="@drawable/ic_calendar_month"
                         app:tint="?attr/colorPrimary" />
 

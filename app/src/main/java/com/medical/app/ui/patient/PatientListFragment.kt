@@ -46,7 +46,7 @@ class PatientListFragment : Fragment() {
         adapter = PatientAdapter { patient ->
             // Navegar al detalle del paciente
             findNavController().navigate(
-                PatientListFragmentDirections.actionPatientListToPatientDetail(patient.id)
+                PatientListFragmentDirections.actionPatientListToPatientDetailFragment(patient.id)
             )
         }
 
@@ -54,20 +54,13 @@ class PatientListFragment : Fragment() {
             layoutManager = LinearLayoutManager(requireContext())
             setHasFixedSize(true)
             this.adapter = this@PatientListFragment.adapter
-            
-            // Agregar divisor entre elementos
-            addItemDecoration(
-                DividerItemDecoration(
-                    requireContext(),
-                    LinearLayoutManager.VERTICAL
-                )
-            )
         }
+    }
 
     private fun setupClickListeners() {
         binding.fabAddPatient.setOnClickListener {
             findNavController().navigate(
-                PatientListFragmentDirections.actionPatientListToAddPatient()
+                PatientListFragmentDirections.actionPatientListToAddPatientFragment()
             )
         }
 

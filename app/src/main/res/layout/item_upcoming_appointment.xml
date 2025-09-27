@@ -53,10 +53,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:drawablePadding="4dp"
-            android:drawableStart="@drawable/ic_time"
             android:gravity="center_vertical"
             android:text="10:30 AM"
-            android:textAppearance="?attr/textAppearanceSubtitle2" />
+            android:textAppearance="?attr/textAppearanceSubtitle2"
+            app:drawableStartCompat="@drawable/ic_time" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -1,11 +1,20 @@
 package com.medical.app.di
 
 import android.content.Context
+import com.medical.app.data.dao.ConsultaDao
+import com.medical.app.data.dao.HistorialMedicoDao
+import com.medical.app.data.dao.MedicoDao
+import com.medical.app.data.dao.MedicoPacienteDao
+import com.medical.app.data.dao.PacienteDao
+import com.medical.app.data.dao.TratamientoDao
+import com.medical.app.data.dao.UsuarioDao
 import com.medical.app.data.database.AppDatabase
-import com.medical.app.data.database.dao.*
 import com.medical.app.data.repository.AuthRepository
+import com.medical.app.data.repository.ConsultaRepository
 import com.medical.app.data.repository.MedicoRepository
 import com.medical.app.data.repository.PacienteRepository
+import com.medical.app.data.repository.TratamientoRepository
+import com.medical.app.util.security.PasswordHasher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,23 +56,38 @@ object DatabaseModule {
 
     @Provides
     fun provideHistorialMedicoDao(database: AppDatabase): HistorialMedicoDao = database.historialMedicoDao()
-    
+
     // Repositorios
     @Provides
     @Singleton
-    fun provideAuthRepository(usuarioDao: UsuarioDao): AuthRepository {
-        return AuthRepository(usuarioDao)
+    fun provideAuthRepository(usuarioDao: UsuarioDao, passwordHasher: PasswordHasher): AuthRepository {
+        return AuthRepository(
+            usuarioDao,
+            passwordHasher = passwordHasher
+        )
     }
-    
+
+    @Provides
+    @Singleton
+    fun provideConsultaRepository(consultaDao: ConsultaDao): ConsultaRepository {
+        return ConsultaRepository(consultaDao)
+    }
+
     @Provides
     @Singleton
     fun provideMedicoRepository(medicoDao: MedicoDao): MedicoRepository {
         return MedicoRepository(medicoDao)
     }
-    
+
     @Provides
     @Singleton
     fun providePacienteRepository(pacienteDao: PacienteDao): PacienteRepository {
         return PacienteRepository(pacienteDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTratamientoRepository(tratamientoDao: TratamientoDao): TratamientoRepository {
+        return TratamientoRepository(tratamientoDao)
     }
 }

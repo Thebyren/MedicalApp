@@ -2,63 +2,67 @@ package com.medical.app.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.medical.app.data.entities.Consulta
+import com.medical.app.data.model.Consulta
+import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 @Dao
 interface ConsultaDao : BaseDao<Consulta> {
     @Query("SELECT * FROM consultas WHERE id = :id")
-    suspend fun getConsultaById(id: Int): Consulta?
+    suspend fun getConsultaById(id: Long): Consulta?
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.paciente_id = :pacienteId
-        ORDER BY c.fecha_consulta DESC
+        WHERE c.pacienteId = :patientId
+        ORDER BY c.fechaConsulta DESC
     """)
-    fun getConsultasPorPaciente(pacienteId: Int): LiveData<List<Consulta>>
+    fun getConsultasByPatient(patientId: Long): Flow<List<Consulta>>
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.medico_id = :medicoId
-        ORDER BY c.fecha_consulta DESC
+        WHERE c.medicoId = :medicoId
+        ORDER BY c.fechaConsulta DESC
     """)
-    fun getConsultasPorMedico(medicoId: Int): LiveData<List<Consulta>>
+    fun getConsultasPorMedico(medicoId: Long): Flow<List<Consulta>>
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.paciente_id = :pacienteId 
-        AND date(c.fecha_consulta/1000, 'unixepoch') = date('now')
-        ORDER BY c.fecha_consulta DESC
+        WHERE c.pacienteId = :pacienteId 
+        AND date(c.fechaConsulta/1000, 'unixepoch') = date('now')
+        ORDER BY c.fechaConsulta DESC
     """)
-    fun getConsultasHoyPorPaciente(pacienteId: Int): LiveData<List<Consulta>>
+    fun getConsultasHoyPorPaciente(pacienteId: Long): Flow<List<Consulta>>
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.medico_id = :medicoId 
-        AND date(c.fecha_consulta/1000, 'unixepoch') = date('now')
-        ORDER BY c.fecha_consulta
+        WHERE c.medicoId = :medicoId 
+        AND date(c.fechaConsulta/1000, 'unixepoch') = date('now')
+        ORDER BY c.fechaConsulta
     """)
-    fun getCitasHoyPorMedico(medicoId: Int): LiveData<List<Consulta>>
+    fun getCitasHoyPorMedico(medicoId: Long): Flow<List<Consulta>>
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.proxima_cita IS NOT NULL 
-        AND c.paciente_id = :pacienteId
-        AND c.proxima_cita >= :hoy
-        ORDER BY c.proxima_cita ASC
+        WHERE c.proximaCita IS NOT NULL 
+        AND c.pacienteId = :pacienteId
+        AND c.proximaCita >= :hoy
+        ORDER BY c.proximaCita ASC
         LIMIT 1
     """)
-    suspend fun getProximaCita(pacienteId: Int, hoy: Date = Date()): Consulta?
+    suspend fun getProximaCita(pacienteId: Long, hoy: Date = Date()): Consulta?
 
     @Query("""
         SELECT c.* FROM consultas c
-        WHERE c.medico_id = :medicoId
-        AND c.fecha_consulta BETWEEN :desde AND :hasta
-        ORDER BY c.fecha_consulta
+        WHERE c.medicoId = :medicoId
+        AND c.fechaConsulta BETWEEN :desde AND :hasta
+        ORDER BY c.fechaConsulta
     """)
     fun getConsultasPorMedicoYRango(
-        medicoId: Int,
+        medicoId: Long,
         desde: Date,
         hasta: Date
-    ): LiveData<List<Consulta>>
+    ): Flow<List<Consulta>>
+
+    @Query("DELETE FROM consultas WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

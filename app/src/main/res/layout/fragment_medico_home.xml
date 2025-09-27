@@ -101,6 +101,7 @@
                         <ImageView
                             android:layout_width="40dp"
                             android:layout_height="40dp"
+                            android:contentDescription="TODO"
                             android:src="@drawable/ic_patient" />
 
                         <TextView
@@ -140,6 +141,7 @@
                         <ImageView
                             android:layout_width="40dp"
                             android:layout_height="40dp"
+                            android:contentDescription="TODO"
                             android:src="@drawable/ic_appointment" />
 
                         <TextView
@@ -178,6 +180,7 @@
                         <ImageView
                             android:layout_width="40dp"
                             android:layout_height="40dp"
+                            android:contentDescription="TODO"
                             android:src="@drawable/ic_revenue" />
 
                         <TextView

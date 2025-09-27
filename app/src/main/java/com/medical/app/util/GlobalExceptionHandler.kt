@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.Process
 import android.util.Log
 import androidx.annotation.RequiresApi
-import com.medical.app.BuildConfig
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -14,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
-
+import com.medical.app.BuildConfig
 /**
  * Manejador global de excepciones no capturadas
  */

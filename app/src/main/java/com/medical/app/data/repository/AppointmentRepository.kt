@@ -1,41 +1,75 @@
 package com.medical.app.data.repository
 
-import com.medical.app.data.local.dao.AppointmentDao
+import com.medical.app.data.dao.AppointmentDao
 import com.medical.app.data.model.Appointment
+import com.medical.app.data.entities.Appointment as AppointmentEntity
 import kotlinx.coroutines.flow.Flow
-import java.util.*
+import kotlinx.coroutines.flow.map
+import java.util.Date
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class AppointmentRepository @Inject constructor(
-    private val appointmentDao: AppointmentDao
-) {
-    fun getUpcomingAppointments(patientId: Long): Flow<List<Appointment>> {
-        return appointmentDao.getUpcomingAppointments(patientId)
+class AppointmentRepository @Inject constructor(private val appointmentDao: AppointmentDao) {
+
+    fun getUpcomingAppointments(patientId:Long,date: Date): Flow<List<Appointment>> {
+        return appointmentDao.getUpcomingAppointments(patientId,date).map { entities ->
+            entities.map { it.toModel() }
+        }
+    }
+
+    fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<Appointment>> {
+        return appointmentDao.getAppointmentsForDateRange(startDate, endDate).map { entities ->
+            entities.map { it.toModel() }
+        }
     }
 
     suspend fun getAppointmentById(id: Long): Appointment? {
-        return appointmentDao.getAppointmentById(id)
+        return appointmentDao.getAppointmentById(id)?.toModel()
     }
 
-    suspend fun insertAppointment(appointment: Appointment): Long {
-        return appointmentDao.insert(appointment)
+    suspend fun insertAppointment(appointment: Appointment) {
+        appointmentDao.insert(appointment.toEntity())
     }
 
     suspend fun updateAppointment(appointment: Appointment) {
-        appointmentDao.update(appointment)
+        appointmentDao.update(appointment.toEntity())
     }
 
     suspend fun deleteAppointment(appointment: Appointment) {
-        appointmentDao.delete(appointment)
+        appointmentDao.delete(appointment.toEntity())
     }
+}
 
-    suspend fun deleteAppointmentById(id: Long) {
-        appointmentDao.deleteById(id)
-    }
+// Mapper functions
+private fun AppointmentEntity.toModel(): Appointment {
+    return Appointment(
+        id = this.id,
+        patientId = this.patientId,
+        doctorId = this.doctorId,
+        title = this.title,
+        description = this.description,
+        dateTime = this.dateTime,
+        duration = this.duration,
+        status = Appointment.AppointmentStatus.valueOf(this.status.name),
+        type = this.type,
+        notes = this.notes,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
+    )
+}
 
-    fun getAppointmentsInRange(patientId: Long, startDate: Date, endDate: Date): Flow<List<Appointment>> {
-        return appointmentDao.getAppointmentsInRange(patientId, startDate, endDate)
-    }
+private fun Appointment.toEntity(): AppointmentEntity {
+    return AppointmentEntity(
+        id = this.id,
+        patientId = this.patientId,
+        doctorId = this.doctorId,
+        title = this.title,
+        description = this.description,
+        dateTime = this.dateTime,
+        duration = this.duration,
+        status = AppointmentEntity.AppointmentStatus.valueOf(this.status.name),
+        type = this.type,
+        notes = this.notes,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
+    )
 }

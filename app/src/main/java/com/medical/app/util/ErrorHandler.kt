@@ -1,6 +1,9 @@
 package com.medical.app.util
 
 import android.content.Context
+import android.net.http.HttpException
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.annotation.StringRes
 import com.medical.app.R
 import retrofit2.HttpException
@@ -18,6 +21,7 @@ class ErrorHandler @Inject constructor(
     /**
      * Procesa una excepción y devuelve un mensaje de error amigable
      */
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun getErrorMessage(throwable: Throwable?): String {
         return when (throwable) {
             is SocketTimeoutException -> context.getString(R.string.error_timeout)
