@@ -3,9 +3,10 @@ package com.medical.app.ui.patient
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.data.entities.Paciente
 import com.medical.app.data.model.Patient
-import com.medical.app.data.repository.PatientRepository
-import com.medical.app.ui.navigation.NavArg
+import com.medical.app.data.model.toEntity
+import com.medical.app.data.repository.PacienteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,11 +16,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PatientDetailViewModel @Inject constructor(
-    private val repository: PatientRepository,
+    private val repository: PacienteRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val patientId: String = checkNotNull(savedStateHandle[NavArg.PATIENT_ID])
+    private val patientId: String = checkNotNull(savedStateHandle["patientId"])
 
     private val _patient = MutableStateFlow<Patient?>(null)
     val patient: StateFlow<Patient?> = _patient.asStateFlow()
@@ -38,7 +39,7 @@ class PatientDetailViewModel @Inject constructor(
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                val patientEntity = repository.getPatientById(patientId)
+                val patientEntity = repository.getById(patientId.toInt())
                 if (patientEntity != null) {
                     _patient.value = patientEntity.toModel() // Convert entity to model
                 } else {
@@ -58,7 +59,7 @@ class PatientDetailViewModel @Inject constructor(
                 _isLoading.value = true
                 val patientModel = _patient.value ?: return@launch
                 // Assuming repository can delete using the model's ID or you have a way to get the entity
-                repository.deletePatientById(patientModel.id)
+                repository.delete(patientModel.toEntity(patientModel.id))
                 _events.value = Event.NavigateBackWithResult(deleted = true)
             } catch (e: Exception) {
                 _events.value = Event.ShowErrorMessage("Error deleting patient: ${e.message}")
@@ -75,20 +76,25 @@ class PatientDetailViewModel @Inject constructor(
 }
 
 // Assume Paciente.kt has this extension function
-fun com.medical.app.data.entities.Paciente.toModel(): Patient {
+fun Paciente.toModel(): Patient {
     return Patient(
         id = this.id,
-        firstName = this.firstName,
-        lastName = this.lastName,
-        dni = this.dni,
-        birthDate = this.birthDate,
-        gender = this.gender,
+        firstName = this.nombre,
+        lastName = this.apellidos,
+        //dni = this.dni,
+        //birthDate = this.fechaNacimiento,
+        gender = this.genero.toString(),
         bloodType = this.bloodType,
-        phoneNumber = this.phoneNumber,
+        //phoneNumber = this.telefono,
         email = this.email,
-        address = this.address,
+        //address = this.direccion,
         allergies = this.allergies,
         notes = this.notes,
-        createdAt = this.createdAt
+        name = TODO(),
+        dni = TODO(),
+        birthdate = TODO(),
+        phone = TODO(),
+        address = TODO(),
+        //createdAt = this.fechaCreacion
     )
 }

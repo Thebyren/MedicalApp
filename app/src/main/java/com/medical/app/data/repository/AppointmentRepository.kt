@@ -1,6 +1,7 @@
 package com.medical.app.data.repository
 
 import com.medical.app.data.dao.AppointmentDao
+import com.medical.app.data.entities.Appointment
 import com.medical.app.data.model.Appointment
 import com.medical.app.data.entities.Appointment as AppointmentEntity
 import kotlinx.coroutines.flow.Flow
@@ -10,37 +11,37 @@ import javax.inject.Inject
 
 class AppointmentRepository @Inject constructor(private val appointmentDao: AppointmentDao) {
 
-    fun getUpcomingAppointments(patientId:Long,date: Date): Flow<List<Appointment>> {
+    fun getUpcomingAppointments(patientId:Long,date: Date): Flow<List<AppointmentEntity>> {
         return appointmentDao.getUpcomingAppointments(patientId,date).map { entities ->
             entities.map { it.toModel() }
         }
     }
 
-    fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<Appointment>> {
+    fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<AppointmentEntity>> {
         return appointmentDao.getAppointmentsForDateRange(startDate, endDate).map { entities ->
             entities.map { it.toModel() }
         }
     }
 
-    suspend fun getAppointmentById(id: Long): Appointment? {
+    suspend fun getAppointmentById(id: Long): AppointmentEntity? {
         return appointmentDao.getAppointmentById(id)?.toModel()
     }
 
-    suspend fun insertAppointment(appointment: Appointment) {
+    suspend fun insertAppointment(appointment: AppointmentEntity) {
         appointmentDao.insert(appointment.toEntity())
     }
 
-    suspend fun updateAppointment(appointment: Appointment) {
+    suspend fun updateAppointment(appointment: AppointmentEntity) {
         appointmentDao.update(appointment.toEntity())
     }
 
-    suspend fun deleteAppointment(appointment: Appointment) {
+    suspend fun deleteAppointment(appointment: AppointmentEntity) {
         appointmentDao.delete(appointment.toEntity())
     }
 }
 
 // Mapper functions
-private fun AppointmentEntity.toModel(): Appointment {
+private fun AppointmentEntity.toModel(): AppointmentEntity {
     return Appointment(
         id = this.id,
         patientId = this.patientId,

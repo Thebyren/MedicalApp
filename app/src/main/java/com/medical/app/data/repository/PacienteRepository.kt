@@ -18,16 +18,16 @@ class PacienteRepository @Inject constructor(
     private val pacienteDao: PacienteDao
 ) : BaseRepository<Paciente, Int> {
 
-    override suspend fun insert(paciente: Paciente): Long {
-        return pacienteDao.insert(paciente).toLong()
+    override suspend fun insert(entity: Paciente): Long {
+        return pacienteDao.insert(entity).toLong()
     }
 
-    override suspend fun update(paciente: Paciente): Int {
-        return pacienteDao.update(paciente)
+    override suspend fun update(entity: Paciente): Int {
+        return pacienteDao.update(entity)
     }
 
-    override suspend fun delete(paciente: Paciente): Int {
-        return pacienteDao.delete(paciente)
+    override suspend fun delete(entity: Paciente): Int {
+        return pacienteDao.delete(entity)
     }
 
     override suspend fun getById(id: Int): Paciente? {

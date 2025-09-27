@@ -16,7 +16,8 @@ data class Patient(
     val email: String,
     val bloodType: String,
     val allergies: String,
-    val notes: String
+    val notes: String,
+    val firstName: String
 )
 
 fun Patient.toEntity(userId: Int) = Paciente(
