@@ -49,6 +49,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // Dependencias principales de Android
     implementation(libs.hilt.android)
