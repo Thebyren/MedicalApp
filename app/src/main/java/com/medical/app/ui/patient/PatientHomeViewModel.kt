@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medical.app.data.model.Appointment
 import com.medical.app.data.repository.AppointmentRepository
-import com.medical.app.data.repository.PatientRepository
+import com.medical.app.data.repository.PacienteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PatientHomeViewModel @Inject constructor(
-    private val patientRepository: PatientRepository,
+    private val patientRepository: PacienteRepository,
     private val appointmentRepository: AppointmentRepository
 ) : ViewModel() {
 
@@ -35,14 +35,14 @@ class PatientHomeViewModel @Inject constructor(
                 _isLoading.value = true
                 
                 // Cargar datos del paciente
-                val patient = patientRepository.getPatientById(patientId)
+                val patient = patientRepository.getById(patientId.toInt())
                 
                 // Cargar citas próximas
-                appointmentRepository.getUpcomingAppointments(patientId)
+                appointmentRepository.getUpcomingAppointments(patientId, Date())
                     .collect { appointments ->
                         _upcomingAppointments.value = appointments
                         _uiState.value = _uiState.value.copy(
-                            patientName = patient?.fullName ?: "",
+                            patientName = patient?.nombre ?: "",
                             nextAppointment = appointments.firstOrNull()
                         )
                     }

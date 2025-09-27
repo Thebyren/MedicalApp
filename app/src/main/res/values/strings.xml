@@ -106,4 +106,10 @@
     <string name="error_loading_patients">Error al cargar pacientes</string>
     <string name="error_generico">Algo Salio Mal</string>
     <string name="descartar">Descartar</string>
+    <string name="nuevo_paciente">Nuevo Paciente</string>
+    <string name="nueva_cita">Nueva Cita</string>
+    <string name="ver_agenda">Ver Agenda</string>
+    <string name="recetas">Recetas</string>
+    <string name="reportes">Reportes</string>
+    <string name="m_s">Más</string>
 </resources>

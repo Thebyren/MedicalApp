@@ -21,8 +21,8 @@ import java.util.Date
         )
     ],
     indices = [
-        Index("medicoId"),
-        Index("pacienteId")
+        Index(value = ["medicoId"]),
+        Index(value = ["pacienteId"])
     ]
 )
 data class Consulta(

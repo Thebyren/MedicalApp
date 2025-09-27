@@ -265,7 +265,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Nuevo Paciente"
+                            android:text="@string/nuevo_paciente"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 
@@ -303,7 +303,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Nueva Cita"
+                            android:text="@string/nueva_cita"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 
@@ -341,7 +341,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Ver Agenda"
+                            android:text="@string/ver_agenda"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 
@@ -379,7 +379,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Recetas"
+                            android:text="@string/recetas"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 
@@ -417,7 +417,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Reportes"
+                            android:text="@string/reportes"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 
@@ -455,7 +455,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="Más"
+                            android:text="@string/m_s"
                             android:textAlignment="center"
                             android:textSize="12sp" />
 

@@ -17,7 +17,7 @@ import java.util.Date
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("pacienteId")]
+    indices = [Index(value = ["pacienteId"])]
 )
 data class HistorialMedico(
     @PrimaryKey(autoGenerate = true)

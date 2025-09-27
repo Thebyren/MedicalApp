@@ -20,23 +20,27 @@ class PatientDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val patientId: String = checkNotNull(savedStateHandle[NavArg.PATIENT_ID])
-    
+
     private val _patient = MutableStateFlow<Patient?>(null)
-    val patient: StateFlow<Patient?> = _patient
-    
+    val patient: StateFlow<Patient?> = _patient.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     private val _events = MutableStateFlow<Event?>(null)
     val events: StateFlow<Event?> = _events.asStateFlow()
+
+    init {
+        loadPatient(patientId)
+    }
 
     fun loadPatient(patientId: String) {
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                val patient = repository.getPatientById(patientId)
-                if (patient != null) {
-                    _patient.value = patient
+                val patientEntity = repository.getPatientById(patientId)
+                if (patientEntity != null) {
+                    _patient.value = patientEntity.toModel() // Convert entity to model
                 } else {
                     _events.value = Event.ShowErrorMessage("Patient not found")
                 }
@@ -47,13 +51,14 @@ class PatientDetailViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun deletePatient() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val patient = _patient.value ?: return@launch
-                repository.deletePatient(patient)
+                val patientModel = _patient.value ?: return@launch
+                // Assuming repository can delete using the model's ID or you have a way to get the entity
+                repository.deletePatientById(patientModel.id)
                 _events.value = Event.NavigateBackWithResult(deleted = true)
             } catch (e: Exception) {
                 _events.value = Event.ShowErrorMessage("Error deleting patient: ${e.message}")
@@ -62,9 +67,28 @@ class PatientDetailViewModel @Inject constructor(
             }
         }
     }
-    
+
     sealed class Event {
         data class ShowErrorMessage(val message: String) : Event()
         data class NavigateBackWithResult(val deleted: Boolean = false) : Event()
     }
+}
+
+// Assume Paciente.kt has this extension function
+fun com.medical.app.data.entities.Paciente.toModel(): Patient {
+    return Patient(
+        id = this.id,
+        firstName = this.firstName,
+        lastName = this.lastName,
+        dni = this.dni,
+        birthDate = this.birthDate,
+        gender = this.gender,
+        bloodType = this.bloodType,
+        phoneNumber = this.phoneNumber,
+        email = this.email,
+        address = this.address,
+        allergies = this.allergies,
+        notes = this.notes,
+        createdAt = this.createdAt
+    )
 }

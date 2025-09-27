@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.medical.app.data.entities.enums.Genero
+import com.medical.app.data.model.Patient
 import java.util.Date
 
 @Entity(
@@ -17,7 +18,7 @@ import java.util.Date
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("usuarioId", unique = true)]
+    indices = [Index(value = ["usuarioId"], unique = true)]
 )
 data class Paciente(
     @PrimaryKey(autoGenerate = true)
@@ -31,20 +32,24 @@ data class Paciente(
     val direccion: String? = null,
     val numeroSeguridadSocial: String? = null,
     val contactoEmergencia: String? = null,
-    val telefonoEmergencia: String? = null
-) {
-    // Constructor secundario para crear un paciente sin ID
-    constructor(
-        usuarioId: Int,
-        nombre: String,
-        apellidos: String,
-        fechaNacimiento: Date,
-        genero: Genero? = null,
-        telefono: String? = null,
-        direccion: String? = null,
-        numeroSeguridadSocial: String? = null,
-        contactoEmergencia: String? = null,
-        telefonoEmergencia: String? = null
-    ) : this(0, usuarioId, nombre, apellidos, fechaNacimiento, genero, telefono, 
-            direccion, numeroSeguridadSocial, contactoEmergencia, telefonoEmergencia)
-}
+    val telefonoEmergencia: String? = null,
+    val email: String = "",
+    val bloodType: String = "",
+    val allergies: String = "",
+    val notes: String = ""
+)
+
+fun Paciente.toModel() = Patient(
+    id = this.id,
+    name = this.nombre,
+    lastName = this.apellidos,
+    dni = this.numeroSeguridadSocial ?: "",
+    birthdate = this.fechaNacimiento,
+    gender = this.genero?.name ?: "",
+    phone = this.telefono ?: "",
+    address = this.direccion ?: "",
+    email = this.email,
+    bloodType = this.bloodType,
+    allergies = this.allergies,
+    notes = this.notes
+)

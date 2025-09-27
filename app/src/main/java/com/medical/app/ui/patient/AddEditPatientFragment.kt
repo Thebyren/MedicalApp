@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -19,7 +20,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.databinding.FragmentAddEditPatientBinding
-import com.medical.app.util.DateUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -92,7 +92,7 @@ class AddEditPatientFragment : Fragment() {
             genders
         )
         
-        binding.tilGender.setAdapter(genderAdapter)
+        binding.actvGender.setAdapter(genderAdapter)
         
         // Setup blood type dropdown
         val bloodTypes = listOf(
@@ -105,7 +105,7 @@ class AddEditPatientFragment : Fragment() {
             bloodTypes
         )
         
-        binding.tilBloodType.setAdapter(bloodTypeAdapter)
+        binding.actvBloodType.setAdapter(bloodTypeAdapter)
     }
     
     private fun setupClickListeners() {
@@ -190,50 +190,50 @@ class AddEditPatientFragment : Fragment() {
             binding.etDob.text?.clear()
         }
         
-        binding.tilGender.setText(state.gender, false)
+        binding.actvGender.setText(state.gender, false)
         binding.etPhoneNumber.setText(state.phoneNumber)
         binding.etEmail.setText(state.email)
         binding.etAddress.setText(state.address)
-        binding.tilBloodType.setText(state.bloodType, false)
+        binding.actvBloodType.setText(state.bloodType, false)
         binding.etAllergies.setText(state.allergies)
         binding.etNotes.setText(state.notes)
         
         // Setup text change listeners
-        binding.etFirstName.setOnTextChanged { text ->
+        binding.etFirstName.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.FirstNameChanged(text.toString()))
         }
         
-        binding.etLastName.setOnTextChanged { text ->
+        binding.etLastName.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.LastNameChanged(text.toString()))
         }
         
-        binding.tilGender.setOnItemClickListener { _, _, position, _ ->
-            val gender = binding.tilGender.adapter?.getItem(position) as? String ?: return@setOnItemClickListener
+        binding.actvGender.setOnItemClickListener { _, _, position, _ ->
+            val gender = binding.actvGender.adapter?.getItem(position) as? String ?: return@setOnItemClickListener
             viewModel.onEvent(AddEditPatientEvent.GenderSelected(gender))
         }
         
-        binding.etPhoneNumber.setOnTextChanged { text ->
+        binding.etPhoneNumber.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.PhoneNumberChanged(text.toString()))
         }
         
-        binding.etEmail.setOnTextChanged { text ->
+        binding.etEmail.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.EmailChanged(text.toString()))
         }
         
-        binding.etAddress.setOnTextChanged { text ->
+        binding.etAddress.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.AddressChanged(text.toString()))
         }
         
-        binding.tilBloodType.setOnItemClickListener { _, _, position, _ ->
-            val bloodType = binding.tilBloodType.adapter?.getItem(position) as? String ?: return@setOnItemClickListener
+        binding.actvBloodType.setOnItemClickListener { _, _, position, _ ->
+            val bloodType = binding.actvBloodType.adapter?.getItem(position) as? String ?: return@setOnItemClickListener
             viewModel.onEvent(AddEditPatientEvent.BloodTypeSelected(bloodType))
         }
         
-        binding.etAllergies.setOnTextChanged { text ->
+        binding.etAllergies.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.AllergiesChanged(text.toString()))
         }
         
-        binding.etNotes.setOnTextChanged { text ->
+        binding.etNotes.addTextChangedListener { text ->
             viewModel.onEvent(AddEditPatientEvent.NotesChanged(text.toString()))
         }
     }

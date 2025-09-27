@@ -1,6 +1,7 @@
 package com.medical.app.util
 
 import com.medical.app.data.entities.Usuario
+import com.medical.app.data.local.AuthState
 import com.medical.app.data.local.SessionManager
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject

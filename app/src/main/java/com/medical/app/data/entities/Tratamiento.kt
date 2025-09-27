@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("consultaId")]
+    indices = [Index(value = ["consultaId"])]
 )
 data class Tratamiento(
     @PrimaryKey(autoGenerate = true)

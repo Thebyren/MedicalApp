@@ -1,6 +1,9 @@
 package com.medical.app.ui.state
 
 import androidx.annotation.StringRes
+import com.medical.app.data.remote.api.ApiResponse
+import com.medical.app.util.AppException
+import com.medical.app.util.Resource
 import com.medical.app.util.UiMessage
 
 /**
@@ -199,6 +202,12 @@ sealed class UiState<out T> {
                 )
             }
         }
+
+        /**
+         * Crea un estado de error con un UiMessage
+         */
+        fun <T> error(message: UiMessage, code: Int? = null, retryAction: (() -> Unit)? = null): UiState<T> =
+            Error(message, code, retryAction)
 
         /**
          * Crea un estado vacío con un mensaje opcional

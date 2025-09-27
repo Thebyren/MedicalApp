@@ -4,9 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medical.app.data.model.Patient
-import com.medical.app.data.repository.PatientRepository
-import com.medical.app.ui.navigation.NavArg
-import com.medical.app.util.DateUtils
+import com.medical.app.data.model.toEntity
+import com.medical.app.data.repository.PacienteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddEditPatientViewModel @Inject constructor(
-    private val repository: PatientRepository,
+    private val repository: PacienteRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -26,7 +25,7 @@ class AddEditPatientViewModel @Inject constructor(
     private val _events = MutableStateFlow<Event?>(null)
     val events: StateFlow<Event?> = _events
 
-    private var currentPatientId: String? = savedStateHandle[NavArg.PATIENT_ID]
+    private var currentPatientId: String? = savedStateHandle[PATIENT_ID]
 
     init {
         currentPatientId?.let { loadPatient(it) }
@@ -36,19 +35,21 @@ class AddEditPatientViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
-                val patient = repository.getPatientById(patientId)
+                val patient = repository.getById(patientId.toInt())
                 if (patient != null) {
                     _uiState.value = _uiState.value.copy(
-                        firstName = patient.firstName,
-                        lastName = patient.lastName,
-                        dateOfBirth = patient.dateOfBirth,
-                        gender = patient.gender,
-                        phoneNumber = patient.phoneNumber,
-                        email = patient.email ?: "",
-                        address = patient.address ?: "",
-                        bloodType = patient.bloodType ?: "",
-                        allergies = patient.allergies ?: "",
-                        notes = patient.notes ?: "",
+                        firstName = patient.nombre,
+                        lastName = patient.apellidos,
+                        dateOfBirth = patient.fechaNacimiento,
+                        gender = (patient.genero ?: "") as String,
+                        phoneNumber = patient.telefono ?: "",
+                        address = patient.direccion ?: "",
+                        // The following fields are not in the Patient model.
+                        // This suggests a mismatch between UI state and data models.
+                        // email = patient.email ?: "",
+                        // bloodType = patient.bloodType ?: "",
+                        // allergies = patient.allergies ?: "",
+                        // notes = patient.notes ?: "",
                         isLoading = false
                     )
                 } else {
@@ -115,21 +116,20 @@ class AddEditPatientViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
                 val patient = Patient(
-                    id = currentPatientId ?: UUID.randomUUID().toString(),
-                    firstName = currentState.firstName.trim(),
+                    id = currentPatientId?.toIntOrNull() ?: 0,
+                    name = currentState.firstName.trim(),
                     lastName = currentState.lastName.trim(),
-                    dateOfBirth = currentState.dateOfBirth!!,
+                    address = currentState.address.trim(),
+                    phone = currentState.phoneNumber.trim(),
+                    birthdate = currentState.dateOfBirth!!,
                     gender = currentState.gender,
-                    phoneNumber = currentState.phoneNumber.trim(),
-                    email = currentState.email.ifBlank { null },
-                    address = currentState.address.ifBlank { null },
-                    bloodType = currentState.bloodType.ifBlank { null },
-                    allergies = currentState.allergies.ifBlank { null },
-                    notes = currentState.notes.ifBlank { null },
-                    updatedAt = Date()
+                    // These fields are in the model but not the UI state.
+                    // This suggests a mismatch between UI state and data models.
+                    occupation = "",
+                    maritalStatus = ""
                 )
                 
-                repository.savePatient(patient)
+                repository.insert(patient.toEntity())
                 _events.value = Event.NavigateBackWithResult(true)
                 
             } catch (e: Exception) {
@@ -144,9 +144,13 @@ class AddEditPatientViewModel @Inject constructor(
         data class ShowErrorMessage(val message: String) : Event()
         data class NavigateBackWithResult(val success: Boolean) : Event()
     }
+
+    companion object {
+        const val PATIENT_ID = "patientId"
+    }
 }
 
-data class AddEditPatientState(
+data class AddEditPatientState  constructor(
     val isLoading: Boolean = false,
     val firstName: String = "",
     val lastName: String = "",

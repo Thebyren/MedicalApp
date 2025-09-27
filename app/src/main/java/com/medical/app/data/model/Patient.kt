@@ -1,27 +1,36 @@
 package com.medical.app.data.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import java.util.*
+import com.medical.app.data.entities.Paciente
+import com.medical.app.data.entities.enums.Genero
+import java.util.Date
 
-@Entity(tableName = "patients")
 data class Patient(
-    @PrimaryKey
-    val id: String = UUID.randomUUID().toString(),
-    val firstName: String,
+    val id: Int = 0,
+    val name: String,
     val lastName: String,
-    val dateOfBirth: Date,
+    val dni: String,
+    val birthdate: Date,
     val gender: String,
-    val phoneNumber: String,
-    val email: String? = null,
-    val address: String? = null,
-    val bloodType: String? = null,
-    val allergies: String? = null,
-    val notes: String? = null,
-    val photoUrl: String? = null,
-    val createdAt: Date = Date(),
-    val updatedAt: Date = Date()
-) {
-    val fullName: String
-        get() = "$firstName $lastName"
-}
+    val phone: String,
+    val address: String,
+    val email: String,
+    val bloodType: String,
+    val allergies: String,
+    val notes: String
+)
+
+fun Patient.toEntity(userId: Int) = Paciente(
+    id = this.id,
+    usuarioId = userId, // This needs to be provided when converting back
+    nombre = this.name,
+    apellidos = this.lastName,
+    fechaNacimiento = this.birthdate,
+    genero = Genero.valueOf(this.gender),
+    telefono = this.phone,
+    direccion = this.address,
+    numeroSeguridadSocial = this.dni,
+    email = this.email,
+    bloodType = this.bloodType,
+    allergies = this.allergies,
+    notes = this.notes
+)

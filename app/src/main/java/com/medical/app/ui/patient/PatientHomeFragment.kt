@@ -6,14 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.data.model.Appointment
 import com.medical.app.databinding.FragmentPatientHomeBinding
-import com.medical.app.ui.patient.PatientHomeViewModel.PatientHomeUiState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -54,6 +57,7 @@ class PatientHomeFragment : Fragment() {
     private fun setupRecyclerView() {
         appointmentAdapter = AppointmentAdapter { appointment ->
             // Navegar al detalle de la cita
+            // Como el fragmento no existe, esta navegación se queda comentada.
             // findNavController().navigate(PatientHomeFragmentDirections.actionToAppointmentDetail(appointment.id))
         }
         
@@ -64,48 +68,57 @@ class PatientHomeFragment : Fragment() {
     }
     
     private fun setupClickListeners() {
+        val action = PatientHomeFragmentDirections.actionPatientHomeToRegistroConsultaFragment(args.patientId.toString())
+
         // Botón de nueva cita
         binding.fabNewAppointment.setOnClickListener {
-            // Navegar a la pantalla de nueva cita
-            // findNavController().navigate(PatientHomeFragmentDirections.actionToNewAppointment(args.patientId))
+            findNavController().navigate(action)
         }
         
         // Botón de nueva cita (cuando no hay citas)
         binding.cardNoAppointments.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnNewAppointment)
             .setOnClickListener {
-                // Navegar a la pantalla de nueva cita
-                // findNavController().navigate(PatientHomeFragmentDirections.actionToNewAppointment(args.patientId))
+                findNavController().navigate(action)
             }
             
         // Botón de ver detalles de la próxima cita
         binding.cardNextAppointment.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewAppointment)
             .setOnClickListener {
                 viewModel.uiState.value.nextAppointment?.let { appointment ->
+                    // Como el fragmento no existe, esta navegación se queda comentada.
                     // findNavController().navigate(PatientHomeFragmentDirections.actionToAppointmentDetail(appointment.id))
                 }
             }
     }
     
     private fun setupObservers() {
-        viewModel.uiState.observe(viewLifecycleOwner) { state ->
-            // Actualizar UI según el estado
-            updateUI(state)
-        }
-        
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-        
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                showError(it)
-                viewModel.clearError()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { state ->
+                        updateUI(state)
+                    }
+                }
+                launch {
+                    viewModel.isLoading.collect { isLoading ->
+                        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+                    }
+                }
+                launch {
+                    viewModel.error.collect { error ->
+                        error?.let {
+                            showError(it)
+                            viewModel.clearError()
+                        }
+                    }
+                }
+                launch {
+                    viewModel.upcomingAppointments.collect { appointments ->
+                        appointmentAdapter.submitList(appointments)
+                        updateAppointmentsUI(appointments)
+                    }
+                }
             }
-        }
-        
-        viewModel.upcomingAppointments.observe(viewLifecycleOwner) { appointments ->
-            appointmentAdapter.submitList(appointments)
-            updateAppointmentsUI(appointments)
         }
     }
     

@@ -42,9 +42,9 @@ class PatientAdapter(
 
         fun bind(patient: Patient) {
             binding.apply {
-                tvPatientName.text = patient.fullName
-                tvPatientInfo.text = "${getFormattedAge(patient.dateOfBirth)} • ${patient.gender}"
-                tvPhoneNumber.text = patient.phoneNumber
+                tvPatientName.text = patient.name
+                tvPatientInfo.text = "${getFormattedAge(patient.birthdate)} • ${patient.gender}"
+                tvPhoneNumber.text = patient.phone
                 
                 root.setOnClickListener { onPatientClick(patient) }
             }

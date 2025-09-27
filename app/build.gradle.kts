@@ -53,6 +53,8 @@ dependencies {
     // Dependencias principales de Android
     implementation(libs.hilt.android)
     implementation(libs.firebase.appdistribution.gradle)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.paging.runtime.ktx)
     ksp(libs.hilt.compiler)
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -119,6 +121,7 @@ dependencies {
     implementation(libs.swiperefreshlayout)
 
     // web services
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
     implementation("com.google.code.gson:gson:2.10.1")
