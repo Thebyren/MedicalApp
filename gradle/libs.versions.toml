@@ -1,7 +1,7 @@
 [versions]
 agp = "8.12.3"
 kotlin = "2.2.20"
-ksp = "2.2.20-1.0.0"
+ksp = "2.2.20-2.0.3"
 hilt = "2.57.2"
 espressoCore = "3.7.0"
 appcompat = "1.7.1"
@@ -11,7 +11,7 @@ activity = "1.11.0"
 constraintlayout = "2.2.1"
 materialVersion = "1.12.0"
 mockitoCore = "5.20.0"
-mockitoKotlin = "6.0.0"
+mockitoKotlin = "6.1.0"
 navigation = "2.9.5"
 security-crypto = "1.1.0"
 glide = "5.0.5"
@@ -24,8 +24,9 @@ truthVersion = "1.4.5"
 turbine = "1.2.1"
 navigationUiKtx = "2.9.5"
 pagingRuntimeKtx = "3.3.6"
-gson = "2.10.1"
-retrofit = "2.9.0"
+gson = "2.13.2"
+retrofit = "3.0.0"
+firebase-appdistribution = "5.1.1"
 
 [libraries]
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleVersion" }
@@ -70,6 +71,7 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 
 [plugins]
+firebase-appdistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebase-appdistribution" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

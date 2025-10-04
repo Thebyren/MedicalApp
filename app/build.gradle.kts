@@ -1,16 +1,15 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
-    id("androidx.navigation.safeargs.kotlin")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.navigation.safeargs)
+    alias(libs.plugins.hilt.android)
     id("com.google.firebase.appdistribution")
 }
 
 android {
     namespace = "com.medical.app"
     compileSdk = 36
-
     defaultConfig {
         applicationId = "com.medical.app"
         minSdk = 24

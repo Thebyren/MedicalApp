@@ -165,7 +165,7 @@ class HistorialConsultasFragment : Fragment() {
         val noResults = isEmpty && (searchQuery.isNotEmpty() || 
                 binding.chipRangoFechas.visibility == View.VISIBLE)
         
-        binding.layoutEmptyState.root.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.layoutEmptyState. root.visibility = if (isEmpty) View.VISIBLE else View.GONE
         binding.rvConsultas.visibility = if (isEmpty) View.GONE else View.VISIBLE
         
         if (isEmpty) {
