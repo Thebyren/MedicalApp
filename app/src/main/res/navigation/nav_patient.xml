@@ -65,8 +65,7 @@
                 android:name="patientId"
                 app:argType="string"
                 android:defaultValue=""
-                app:nullable="true"
-                app:defaultValue="@null" />
+                app:nullable="true" />
         </action>
         <action
             android:id="@+id/action_patientDetail_to_registroConsultaFragment"

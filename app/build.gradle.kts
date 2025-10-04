@@ -21,6 +21,15 @@ android {
         
         // Habilitar el uso de Java 8 features
         vectorDrawables.useSupportLibrary = true
+        
+        // Leer API key de Gemini desde local.properties
+        val properties = org.jetbrains.kotlin.konan.properties.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { properties.load(it) }
+        }
+        val geminiApiKey = properties.getProperty("GEMINI_API_KEY") ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -124,6 +133,9 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    
+    // Gemini AI
+    implementation(libs.generativeai)
 }
 
 ksp {

@@ -3,6 +3,7 @@ package com.medical.app.ui.patient
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.data.local.SessionManager
 import com.medical.app.data.model.Patient
 import com.medical.app.data.model.toEntity
 import com.medical.app.data.repository.PacienteRepository
@@ -16,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddEditPatientViewModel @Inject constructor(
     private val repository: PacienteRepository,
+    private val sessionManager: SessionManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,19 +39,25 @@ class AddEditPatientViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val patient = repository.getById(patientId.toInt())
                 if (patient != null) {
+                    val genderDisplay = when (patient.genero?.name) {
+                        "MASCULINO" -> "Masculino"
+                        "FEMENINO" -> "Femenino"
+                        "OTRO" -> "Otro"
+                        else -> ""
+                    }
+                    
                     _uiState.value = _uiState.value.copy(
                         firstName = patient.nombre,
                         lastName = patient.apellidos,
                         dateOfBirth = patient.fechaNacimiento,
-                        gender = (patient.genero ?: "") as String,
+                        gender = genderDisplay,
                         phoneNumber = patient.telefono ?: "",
+                        dni = patient.numeroSeguridadSocial ?: "",
+                        email = patient.email,
                         address = patient.direccion ?: "",
-                        // The following fields are not in the Patient model.
-                        // This suggests a mismatch between UI state and data models.
-                        // email = patient.email ?: "",
-                        // bloodType = patient.bloodType ?: "",
-                        // allergies = patient.allergies ?: "",
-                        // notes = patient.notes ?: "",
+                        bloodType = patient.bloodType,
+                        allergies = patient.allergies,
+                        notes = patient.notes,
                         isLoading = false
                     )
                 } else {
@@ -110,13 +118,21 @@ class AddEditPatientViewModel @Inject constructor(
         if (currentState.firstName.isBlank() || currentState.lastName.isBlank() || 
             currentState.dateOfBirth == null || currentState.gender.isBlank() || 
             currentState.phoneNumber.isBlank()) {
-            _events.value = Event.ShowErrorMessage("Please fill in all required fields")
+            _events.value = Event.ShowErrorMessage("Por favor completa todos los campos requeridos")
             return
         }
         
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
+                
+                // Obtener el usuario actual
+                val currentUser = sessionManager.getCurrentUser()
+                if (currentUser == null) {
+                    _events.value = Event.ShowErrorMessage("Error: No hay sesión activa")
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    return@launch
+                }
                 
                 val patient = Patient(
                     id = currentPatientId?.toIntOrNull() ?: 0,
@@ -133,11 +149,11 @@ class AddEditPatientViewModel @Inject constructor(
                     notes = currentState.notes
                 )
 
-                repository.insert(patient.toEntity(0)) // Placeholder for userId
+                repository.insert(patient.toEntity(currentUser.id))
                 _events.value = Event.NavigateBackWithResult(true)
                 
             } catch (e: Exception) {
-                _events.value = Event.ShowErrorMessage("Error saving patient: ${e.message}")
+                _events.value = Event.ShowErrorMessage("Error al guardar paciente: ${e.message}")
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }

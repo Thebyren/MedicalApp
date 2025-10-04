@@ -60,7 +60,7 @@ class MedicoHomeFragment : Fragment() {
     private fun setupQuickActions() {
         // Agregar Paciente
         binding.cardAddPatient.setOnClickListener {
-            findNavController().navigate(R.id.action_medicoHomeFragment_to_addPatientFragment)
+            findNavController().navigate(R.id.action_medicoHomeFragment_to_patientListFragment)
         }
 
         // Nueva Cita
@@ -90,8 +90,21 @@ class MedicoHomeFragment : Fragment() {
     }
 
     private fun updateWelcomeMessage() {
-        // Welcome message is handled in the layout XML
-        // TODO: Update welcome message dynamically when user data is available
+        // Obtener el usuario actual desde SessionManager
+        val currentUser = viewModel.getCurrentUser()
+        
+        // Actualizar el mensaje de bienvenida con el nombre del médico
+        val welcomeMessage = if (currentUser != null) {
+            "¡Bienvenido, Dr. ${currentUser.nombreCompleto}!"
+        } else {
+            "¡Bienvenido, Doctor!"
+        }
+        binding.tvWelcome.text = welcomeMessage
+        
+        // Actualizar la fecha actual
+        val dateFormat = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy", Locale("es", "ES"))
+        val currentDate = dateFormat.format(Date())
+        binding.tvDate.text = "Hoy es $currentDate"
     }
 
     private fun showMoreOptions() {
