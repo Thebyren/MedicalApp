@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import com.medical.app.data.entities.Usuario
 
 /**
  * Estados posibles para la pantalla de autenticación.
@@ -95,7 +97,8 @@ class AuthViewModel @Inject constructor(
     }
 
     private suspend fun login(): Result<Int> {
-        return when (val result = authRepository.login(_email.value, _password.value)) {
+        val result = authRepository.login(_email.value, _password.value).first()
+        return when (result) {
             is Result.Success -> {
                 val userId = result.data.id
                 Result.Success(userId)
@@ -106,13 +109,18 @@ class AuthViewModel @Inject constructor(
     }
 
     private suspend fun register(): Result<Int> {
-        return when (val result = authRepository.registrarUsuario(
-            _email.value,
-            _password.value,
-            _tipoUsuario.value
-        )) {
+        // Construimos un Usuario mínimo; el hash/salt serán generados en el repositorio
+        val usuario = Usuario(
+            nombreCompleto = _email.value, // TODO: reemplazar por nombre real si está disponible
+            email = _email.value,
+            passwordHash = "",
+            salt = null,
+            tipoUsuario = _tipoUsuario.value
+        )
+
+        val result = authRepository.registrar(usuario, _password.value).first()
+        return when (result) {
             is Result.Success -> {
-                val userId = result.data.toInt()
                 // Después de registrar, hacer login automáticamente
                 login()
             }
@@ -125,8 +133,6 @@ class AuthViewModel @Inject constructor(
      * Verifica si el formulario actual es válido.
      */
     fun isFormValid(): Boolean {
-        return _email.value.isNotBlank() && 
-               _password.value.isNotBlank() && 
-               (_isLoginMode.value || _tipoUsuario.value != null)
+        return _email.value.isNotBlank() && _password.value.isNotBlank()
     }
 }

@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medical.app.data.local.SessionManager
 import com.medical.app.data.repository.AuthRepository
-import com.medical.app.data.repository.Result
+import com.medical.app.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,7 +22,7 @@ class LoginViewModel @Inject constructor(
     private val sessionManager: SessionManager
 ) : ViewModel() {
     
-    private val _loginState = MutableStateFlow<Result<Unit>>(Result.Idle)
+    private val _loginState = MutableStateFlow<Result<Unit>>(Result.idle())
     val loginState: StateFlow<Result<Unit>> = _loginState
     
     /**
@@ -34,32 +35,25 @@ class LoginViewModel @Inject constructor(
             _loginState.value = Result.Loading
             
             try {
-                val result = authRepository.login(email, password)
-                
+                val result = authRepository.login(email, password).first()
+
                 when (result) {
                     is Result.Success -> {
                         // Iniciar sesión exitosamente
-                        result.data?.let { user ->
-                            // Guardar la sesión
-                            sessionManager.loginUser(user, "auth_token_placeholder")
-                            _loginState.value = Result.Success(Unit)
-                        } ?: run {
-                            _loginState.value = Result.Error("Error al procesar los datos del usuario")
-                        }
+                        val user = result.data
+                        // Guardar la sesión
+                        sessionManager.loginUser(user, "auth_token_placeholder")
+                        _loginState.value = Result.Success(Unit)
                     }
                     is Result.Error -> {
-                        _loginState.value = Result.Error(
-                            result.message ?: "Error de autenticación"
-                        )
+                        _loginState.value = result
                     }
                     else -> {
-                        _loginState.value = Result.Error("Error desconocido")
+                        _loginState.value = Result.Error(Exception("Estado inesperado durante el login"))
                     }
                 }
             } catch (e: Exception) {
-                _loginState.value = Result.Error(
-                    e.message ?: "Error al intentar iniciar sesión"
-                )
+                _loginState.value = Result.Error(e)
             }
         }
     }
@@ -68,6 +62,6 @@ class LoginViewModel @Inject constructor(
      * Restablece el estado del ViewModel a su valor inicial.
      */
     fun resetState() {
-        _loginState.value = Result.Idle
+        _loginState.value = Result.idle()
     }
 }

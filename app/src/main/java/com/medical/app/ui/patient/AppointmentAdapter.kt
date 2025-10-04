@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.medical.app.data.model.Appointment
+import com.medical.app.data.entities.Appointment
 import com.medical.app.databinding.ItemAppointmentBinding
 import java.text.SimpleDateFormat
 import java.util.*

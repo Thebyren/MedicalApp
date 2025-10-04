@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.medical.app.R
-import com.medical.app.data.model.Appointment
+import com.medical.app.data.entities.Appointment
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,15 +26,15 @@ class UpcomingAppointmentsAdapter :
         val appointment = getItem(position)
         holder.bind(appointment)
     }
-
     inner class AppointmentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvPatientName: TextView = itemView.findViewById(R.id.tvPatientName)
         private val tvAppointmentTime: TextView = itemView.findViewById(R.id.tvAppointmentTime)
         private val tvAppointmentType: TextView = itemView.findViewById(R.id.tvAppointmentType)
 
         fun bind(appointment: Appointment) {
-            tvPatientName.text = appointment.patientName
-            tvAppointmentTime.text = formatAppointmentTime(appointment.appointmentTime)
+            // TODO: Load patient name from database using patientId
+            tvPatientName.text = "Patient #${appointment.patientId}"
+            tvAppointmentTime.text = formatAppointmentTime(appointment.dateTime)
             tvAppointmentType.text = appointment.type
             
             itemView.setOnClickListener {

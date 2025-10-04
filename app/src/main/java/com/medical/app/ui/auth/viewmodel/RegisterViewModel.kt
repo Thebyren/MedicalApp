@@ -6,10 +6,11 @@ import com.medical.app.data.entities.Usuario
 import com.medical.app.data.entities.enums.TipoUsuario
 import com.medical.app.data.local.SessionManager
 import com.medical.app.data.repository.AuthRepository
-import com.medical.app.data.repository.Result
+import com.medical.app.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,34 +39,32 @@ class RegisterViewModel @Inject constructor(
             _registrationState.value = Result.Loading
 
             try {
-                // Verificar si el correo ya está registrado
-                val emailExists = authRepository.existeEmail(email)
-                
-                if (emailExists) {
-                    _registrationState.value = Result.Error("El correo electrónico ya está registrado")
+                // 1. Verificar si el correo ya está registrado
+                if (authRepository.existeEmail(email)) {
+                    _registrationState.value = Result.Error(Exception("El correo electrónico ya está registrado."))
                     return@launch
                 }
-                
-                // Registrar el nuevo usuario
-                val result = authRepository.registrarUsuario(email, password, fullName, userType)
-                
-                when (result) {
-                    is Result.Success -> {
-                        _registrationState.value = Result.Success(Unit)
-                    }
-                    is Result.Error -> {
-                        _registrationState.value = Result.Error(
-                            result.message ?: "Error en el registro"
-                        )
-                    }
-                    else -> {
-                        _registrationState.value = Result.Error("Error desconocido")
-                    }
-                }
-            } catch (e: Exception) {
-                _registrationState.value = Result.Error(
-                    e.message ?: "Error al intentar registrarse"
+
+                // 2. Crear el objeto Usuario
+                val newUser = Usuario(
+                    nombreCompleto = fullName,
+                    email = email,
+                    passwordHash = "", // El repositorio se encarga de esto
+                    salt = null,      // El repositorio se encarga de esto
+                    tipoUsuario = userType
                 )
+
+                // 3. Registrar el nuevo usuario y recolectar el resultado del Flow
+                val result = authRepository.registrar(newUser, password).first()
+
+                _registrationState.value = when (result) {
+                    is Result.Success -> Result.Success(Unit)
+                    is Result.Error -> result // Re-propagate the error
+                    else -> Result.Error(Exception("Estado inesperado durante el registro."))
+                }
+
+            } catch (e: Exception) {
+                _registrationState.value = Result.Error(e)
             }
         }
     }

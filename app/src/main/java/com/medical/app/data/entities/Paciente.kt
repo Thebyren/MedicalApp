@@ -51,5 +51,5 @@ fun Paciente.toModel() = Patient(
     email = this.email,
     bloodType = this.bloodType,
     allergies = this.allergies,
-    notes = this.notes,
+    notes = this.notes
 )

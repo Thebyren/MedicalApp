@@ -98,7 +98,7 @@
 
             <!-- Enlace para registrarse -->
             <TextView
-                android:id="@+id/tvRegister"
+                android:id="@+id/tvRegisterHere"
                 style="?attr/textAppearanceBody2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -110,6 +110,18 @@
                 android:textStyle="bold"
                 app:drawableStartCompat="@drawable/ic_add_circle"
                 app:drawableTint="@color/colorPrimary" />
+
+            <!-- Enlace para recuperar contraseña -->
+            <TextView
+                android:id="@+id/tvForgotPassword"
+                style="?attr/textAppearanceBody2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:padding="8dp"
+                android:text="@string/forgot_password"
+                android:textColor="@color/colorPrimary" />
 
             <!-- Indicador de carga -->
             <ProgressBar
@@ -123,15 +135,5 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Snackbar para mostrar mensajes -->
-    <com.google.android.material.snackbar.Snackbar
-        android:id="@+id/snackbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        app:actionTextColor="@color/white"
-        app:backgroundTint="@color/colorError"
-        app:maxWidth="600dp"
-        app:textColor="@color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

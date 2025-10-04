@@ -2,6 +2,8 @@ package com.medical.app.core
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +23,10 @@ abstract class BaseViewModel<State : Any, Event : Any> : ViewModel() {
     protected val _error = MutableStateFlow<Throwable?>(null)
     val error: StateFlow<Throwable?> = _error
 
-    protected val _event = SingleLiveEvent<Event>()
+    protected val _event = SingleLiveEvent<Event>(
+        replayCache = TODO(),
+        subscriptionCount = TODO()
+    )
     val event: SingleLiveEvent<Event> = _event
 
     protected fun setLoading(isLoading: Boolean) {
@@ -57,22 +62,42 @@ abstract class BaseViewModel<State : Any, Event : Any> : ViewModel() {
 /**
  * Clase de utilidad para eventos que solo deben ser manejados una vez, como navegación o mensajes.
  */
-class SingleLiveEvent<T> : MutableStateFlow<T?> {
+class SingleLiveEvent<T>(
+    override val replayCache: List<T?>,
+    override val subscriptionCount: StateFlow<Int>
+) : MutableStateFlow<T?> {
     private val pending = MutableStateFlow(false)
-    
+    private var _value: T? = null
     override var value: T?
-        get() = super.value
+        get() = _value
         set(value) {
             pending.value = true
-            super.value = value
+            _value = value
         }
-    
-    override suspend fun collect(collector: kotlinx.coroutines.flow.FlowCollector<T?>) {
+
+    override fun compareAndSet(expect: T?, update: T?): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun collect(collector: FlowCollector<T?>): Nothing {
         collect { value ->
             if (pending.value) {
                 pending.value = false
                 collector.emit(value)
             }
         }
+    }
+
+    override suspend fun emit(value: T?) {
+        TODO("Not yet implemented")
+    }
+
+    @ExperimentalCoroutinesApi
+    override fun resetReplayCache() {
+        TODO("Not yet implemented")
+    }
+
+    override fun tryEmit(value: T?): Boolean {
+        TODO("Not yet implemented")
     }
 }

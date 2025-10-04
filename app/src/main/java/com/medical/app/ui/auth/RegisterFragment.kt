@@ -12,6 +12,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.data.entities.enums.TipoUsuario
+import com.medical.app.utils.Result
 import com.medical.app.databinding.FragmentRegisterBinding
 import com.medical.app.ui.auth.viewmodel.RegisterViewModel
 import com.medical.app.util.extensions.hideKeyboard
@@ -60,7 +61,7 @@ class RegisterFragment : Fragment() {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
         
-        binding.spinnerUserType.adapter = adapter
+        binding.spinnerUserType.setAdapter(adapter)
     }
     
     private fun setupClickListeners() {
@@ -71,7 +72,8 @@ class RegisterFragment : Fragment() {
             val password = binding.etPassword.text.toString()
             val confirmPassword = binding.etConfirmPassword.text.toString()
             val fullName = binding.etFullName.text.toString().trim()
-            val selectedUserType = userTypes[binding.spinnerUserType.selectedItemPosition].first
+            val selectedUserTypeText = binding.spinnerUserType.text.toString()
+            val selectedUserType = userTypes.first { it.second == selectedUserTypeText }.first
             
             if (validateInputs(email, password, confirmPassword, fullName)) {
                 viewModel.register(email, password, fullName, selectedUserType)
@@ -87,17 +89,17 @@ class RegisterFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.registrationState.collectLatest { result ->
                 when (result) {
-                    is com.medical.app.data.repository.Result.Loading -> {
+                    is Result.Loading -> {
                         showLoading(true)
                     }
-                    is com.medical.app.data.repository.Result.Success -> {
+                    is Result.Success -> {
                         showLoading(false)
                         showMessage("Registro exitoso. Por favor inicia sesión.")
                         navigateToLogin()
                     }
-                    is com.medical.app.data.repository.Result.Error -> {
+                    is Result.Error -> {
                         showLoading(false)
-                        showMessage(result.message ?: "Error en el registro")
+                        showMessage(result.exception.message ?: "Error en el registro")
                     }
                     else -> { /* No action needed */ }
                 }

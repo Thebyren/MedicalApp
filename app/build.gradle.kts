@@ -1,9 +1,10 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.navigation.safeargs)
-    alias(libs.plugins.hilt.android)
+    id("com.google.devtools.ksp")
+    id("androidx.navigation.safeargs.kotlin")
+    id("com.google.dagger.hilt.android")
+    id("com.google.firebase.appdistribution")
 }
 
 android {
@@ -13,7 +14,6 @@ android {
     defaultConfig {
         applicationId = "com.medical.app"
         minSdk = 24
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -32,33 +32,24 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
     
     // Habilitar el uso de ViewBinding
     buildFeatures {
         buildConfig = true
         viewBinding = true
     }
-    
-    // Configuración de Kotlin
-    kotlinOptions {
-        jvmTarget = "11"
-    }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+kotlin {
+    jvmToolchain(11)
 }
 
 dependencies {
+    implementation("com.google.android.material:material:1.13.0")
     // Dependencias principales de Android
     implementation(libs.hilt.android)
-    implementation(libs.firebase.appdistribution.gradle)
+
     implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.paging.runtime.ktx)
     ksp(libs.hilt.compiler)
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -73,6 +64,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     ksp(libs.androidx.room.compiler)
     
     // Lifecycle components (ViewModel & LiveData)
@@ -103,6 +95,8 @@ dependencies {
     // Hilt testing
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     
     // MockWebServer para pruebas de red
     testImplementation(libs.mockwebserver)
@@ -125,8 +119,13 @@ dependencies {
     implementation(libs.swiperefreshlayout)
 
     // web services
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.gson)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }

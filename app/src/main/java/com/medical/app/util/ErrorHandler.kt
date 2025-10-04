@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.medical.app.util.AppException
 
 @Singleton
 class ErrorHandler @Inject constructor(
@@ -24,6 +25,7 @@ class ErrorHandler @Inject constructor(
             is UnknownHostException -> context.getString(R.string.error_no_internet)
             is IOException -> context.getString(R.string.error_network)
             is HttpException -> handleHttpError(throwable)
+            is ValidationException -> throwable.errors.values.joinToString("\n")
             is AppException -> throwable.message ?: context.getString(R.string.error_generic)
             else -> context.getString(R.string.error_unexpected)
         }
@@ -63,20 +65,15 @@ class ErrorHandler @Inject constructor(
     }
 }
 
-/**
- * Clase base para excepciones personalizadas de la aplicación
- */
-sealed class AppException(
-    message: String? = null,
-    cause: Throwable? = null
-) : Exception(message, cause)
+
+
 
 /**
  * Excepción para errores de validación
  */
-data class ValidationException(
+class ValidationException(
     val errors: Map<String, String>,
-    override val cause: Throwable? = null
+    cause: Throwable? = null
 ) : AppException("Error de validación", cause)
 
 /**

@@ -6,7 +6,12 @@ import com.medical.app.util.security.PasswordHasher
 import com.medical.app.utils.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AuthRepository @Inject constructor(
     private val usuarioDao: UsuarioDao,
@@ -53,14 +58,15 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    fun getUsuariosPorTipo(tipo: String): Flow<Result<List<Usuario>>> = flow {
-        emit(Result.loading())
-        try {
-            val usuarios = usuarioDao.getUsuariosPorTipo(tipo)
-            emit(Result.success(usuarios) as Result<List<Usuario>>)
-        } catch (e: Exception) {
-            emit(Result.error(e))
-        }
+    fun getUsuariosPorTipo(tipo: String): Flow<Result<List<Usuario>>> {
+        return usuarioDao.getUsuariosPorTipo(tipo)
+            .map<List<Usuario>, Result<List<Usuario>>> { usuarios -> Result.Success(usuarios) }
+            .onStart { emit(Result.Loading) }
+            .catch { exception -> emit(Result.Error(Exception(exception))) }
+    }
+
+    suspend fun existeEmail(email: String): Boolean = withContext(Dispatchers.IO) {
+        return@withContext usuarioDao.existeEmail(email) > 0
     }
 
     fun desactivarCuenta(id: Int): Flow<Result<Unit>> = flow {

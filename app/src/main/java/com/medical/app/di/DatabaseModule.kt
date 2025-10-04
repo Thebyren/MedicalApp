@@ -1,6 +1,7 @@
 package com.medical.app.di
 
 import android.content.Context
+import com.medical.app.data.dao.AppointmentDao
 import com.medical.app.data.dao.ConsultaDao
 import com.medical.app.data.dao.HistorialMedicoDao
 import com.medical.app.data.dao.MedicoDao
@@ -9,6 +10,7 @@ import com.medical.app.data.dao.PacienteDao
 import com.medical.app.data.dao.TratamientoDao
 import com.medical.app.data.dao.UsuarioDao
 import com.medical.app.data.database.AppDatabase
+import com.medical.app.data.repository.AppointmentRepository
 import com.medical.app.data.repository.AuthRepository
 import com.medical.app.data.repository.ConsultaRepository
 import com.medical.app.data.repository.MedicoRepository
@@ -57,6 +59,9 @@ object DatabaseModule {
     @Provides
     fun provideHistorialMedicoDao(database: AppDatabase): HistorialMedicoDao = database.historialMedicoDao()
 
+    @Provides
+    fun provideAppointmentDao(database: AppDatabase): AppointmentDao = database.appointmentDao()
+
     // Repositorios
     @Provides
     @Singleton
@@ -89,5 +94,11 @@ object DatabaseModule {
     @Singleton
     fun provideTratamientoRepository(tratamientoDao: TratamientoDao): TratamientoRepository {
         return TratamientoRepository(tratamientoDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppointmentRepository(appointmentDao: AppointmentDao): AppointmentRepository {
+        return AppointmentRepository(appointmentDao)
     }
 }

@@ -6,14 +6,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.databinding.FragmentMedicoHomeBinding
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.util.*
 
+@AndroidEntryPoint
 class MedicoHomeFragment : Fragment() {
 
     private var _binding: FragmentMedicoHomeBinding? = null
@@ -31,18 +34,15 @@ class MedicoHomeFragment : Fragment() {
     }
 
 
-override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    super.onViewCreated(view, savedInstanceState)
-    
-    setupToolbar()
-    setupBottomNavigation()
-    setupQuickActions()
-    setupObservers()
-    updateWelcomeMessage()
-    
-    // Cargar estadísticas del médico
-    viewModel.loadDoctorStats("doctor_id") // Reemplazar con el ID real del médico
-}
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupToolbar()
+        setupBottomNavigation()
+        setupQuickActions()
+        setupObservers()
+        updateWelcomeMessage()
+    }
 
 
     private fun setupToolbar() {
@@ -90,13 +90,8 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     }
 
     private fun updateWelcomeMessage() {
-        val currentDate = SimpleDateFormat("EEEE, d 'de' MMMM", Locale.getDefault())
-            .format(Date())
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-        
-        // Aquí podrías obtener el nombre del médico desde tu ViewModel o preferencias
-        val doctorName = "Pérez" // Reemplazar con el nombre real del médico
-        binding.textWelcome.text = getString(R.string.welcome_doctor, doctorName, currentDate)
+        // Welcome message is handled in the layout XML
+        // TODO: Update welcome message dynamically when user data is available
     }
 
     private fun showMoreOptions() {
@@ -126,25 +121,17 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onDestroyView()
         _binding = null
     }
+
     private fun setupObservers() {
-    viewModel.stats.observe(viewLifecycleOwner) { stats ->
-        // Actualizar la UI con las estadísticas
-        binding.tvAppointmentsCount.text = stats.appointmentsToday.toString()
-        binding.tvPatientsCount.text = stats.totalPatients.toString()
-        binding.tvEarnings.text = "$${stats.monthlyEarnings}"
-    }
-    
-    viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-        // Mostrar/ocultar indicador de carga
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-    }
-    
-    viewModel.error.observe(viewLifecycleOwner) { error ->
-        error?.let {
-            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-            viewModel.clearError()
+        viewModel.stats.observe(viewLifecycleOwner) { stats ->
+            // TODO: Update UI with stats when dynamic TextViews are added to layout
+            // For now, stats are shown as static values in the XML layout
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
         }
     }
-}
-
 }

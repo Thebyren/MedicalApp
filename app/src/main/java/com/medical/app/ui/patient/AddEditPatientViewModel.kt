@@ -79,6 +79,9 @@ class AddEditPatientViewModel @Inject constructor(
             is AddEditPatientEvent.PhoneNumberChanged -> {
                 _uiState.value = _uiState.value.copy(phoneNumber = event.value)
             }
+            is AddEditPatientEvent.DniChanged -> {
+                _uiState.value = _uiState.value.copy(dni = event.value)
+            }
             is AddEditPatientEvent.EmailChanged -> {
                 _uiState.value = _uiState.value.copy(email = event.value)
             }
@@ -119,17 +122,18 @@ class AddEditPatientViewModel @Inject constructor(
                     id = currentPatientId?.toIntOrNull() ?: 0,
                     name = currentState.firstName.trim(),
                     lastName = currentState.lastName.trim(),
-                    address = currentState.address.trim(),
-                    phone = currentState.phoneNumber.trim(),
-                    birthdate = currentState.dateOfBirth!!,
+                    dni = currentState.dni.trim(),
+                    birthdate = currentState.dateOfBirth,
                     gender = currentState.gender,
-                    // These fields are in the model but not the UI state.
-                    // This suggests a mismatch between UI state and data models.
-                    occupation = "",
-                    maritalStatus = ""
+                    phone = currentState.phoneNumber.trim(),
+                    address = currentState.address.trim(),
+                    email = currentState.email.trim(),
+                    bloodType = currentState.bloodType,
+                    allergies = currentState.allergies,
+                    notes = currentState.notes
                 )
-                
-                repository.insert(patient.toEntity())
+
+                repository.insert(patient.toEntity(0)) // Placeholder for userId
                 _events.value = Event.NavigateBackWithResult(true)
                 
             } catch (e: Exception) {
@@ -157,6 +161,7 @@ data class AddEditPatientState  constructor(
     val dateOfBirth: Date? = null,
     val gender: String = "",
     val phoneNumber: String = "",
+    val dni: String = "",
     val email: String = "",
     val address: String = "",
     val bloodType: String = "",
@@ -170,6 +175,7 @@ sealed class AddEditPatientEvent {
     data class DateOfBirthChanged(val date: Date) : AddEditPatientEvent()
     data class GenderSelected(val gender: String) : AddEditPatientEvent()
     data class PhoneNumberChanged(val value: String) : AddEditPatientEvent()
+    data class DniChanged(val value: String) : AddEditPatientEvent()
     data class EmailChanged(val value: String) : AddEditPatientEvent()
     data class AddressChanged(val value: String) : AddEditPatientEvent()
     data class BloodTypeSelected(val bloodType: String) : AddEditPatientEvent()

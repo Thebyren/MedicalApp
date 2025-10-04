@@ -42,8 +42,11 @@ class ApiResponseHandler @Inject constructor(
         return when (throwable) {
             is HttpException -> {
                 val errorResponse = throwable.response()
-                val errorMsg = errorResponse?.errorBody()?.string() 
-                    ?: "Error HTTP ${errorResponse?.code()}: ${errorResponse?.message()}"
+                val errorMsg = try {
+                    errorResponse?.errorBody()?.string()
+                } catch (e: Exception) {
+                    null
+                } ?: "Error HTTP ${errorResponse?.code()}: ${errorResponse?.message()}"
                 AppException(errorMsg, throwable)
             }
             is IOException -> AppException("Error de red: ${throwable.message}", throwable)
@@ -75,11 +78,10 @@ class ApiResponseHandler @Inject constructor(
                 if (body != null) {
                     Result.success(body)
                 } else {
-                    Result.failure(AppException("Respuesta vacía del servidor"))
+                    Result.failure(AppException("Respuesta vacía del servidor", null))
                 }
             } else {
-                val errorMsg = response.errorBody()?.string() ?: response.message()
-                Result.failure(AppException(errorMsg ?: "Error desconocido"))
+                Result.failure(handleException(HttpException(response)))
             }
         } catch (e: Exception) {
             Result.failure(handleException(e))

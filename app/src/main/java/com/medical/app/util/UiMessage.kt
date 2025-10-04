@@ -174,7 +174,7 @@ fun UiMessage.showConfirmationDialog(
     
     // Usar un diálogo de Material Design
     com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
-        .setTitle(title ?: context.getString(R.string.confirmacion))
+        .setTitle(title ?: context.getString(R.string.confirmation))
         .setMessage(message)
         .setPositiveButton(positiveButtonText) { dialog, _ ->
             dialog.dismiss()

@@ -10,9 +10,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
+import com.medical.app.utils.Result
 import com.medical.app.data.local.SessionManager
 import com.medical.app.data.local.AuthState
-import com.medical.app.data.repository.Result
 import com.medical.app.databinding.FragmentLoginBinding
 import com.medical.app.ui.auth.viewmodel.LoginViewModel
 import com.medical.app.util.extensions.hideKeyboard
@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class LoginFragment : Fragment() {
@@ -99,14 +100,14 @@ class LoginFragment : Fragment() {
                     is Result.Loading -> {
                         showLoading(true)
                     }
-                    is Result.Success -> {
+                    is Result.Success<*> -> {
                         showLoading(false)
                         showMessage("Inicio de sesión exitoso")
                         navigateToMain()
                     }
                     is Result.Error -> {
                         showLoading(false)
-                        val errorMessage = result.message ?: "Error desconocido al iniciar sesión"
+                        val errorMessage = result.exception.message ?: "Error desconocido al iniciar sesión"
                         showMessage(errorMessage)
                     }
                     else -> { /* No action needed for other states */ }
@@ -158,7 +159,7 @@ class LoginFragment : Fragment() {
     
     private fun navigateToMain() {
         // Usar el ID de navegación correcto según tu gráfico de navegación
-        val action = LoginFragmentDirections.actionLoginFragmentToMainFragment()
+        val action = LoginFragmentDirections.actionLoginFragmentToMedicoHomeFragment()
         findNavController().navigate(action)
     }
     

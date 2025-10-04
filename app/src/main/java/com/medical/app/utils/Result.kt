@@ -5,6 +5,7 @@ package com.medical.app.utils
  * Puede ser de tipo Success (éxito) o Error (fallo).
  */
 sealed class Result<out T> {
+    object Idle : Result<Nothing>()
     data class Success<out T>(val data: T) : Result<T>() {
         override fun toString() = "Success[data=$data]"
     }
@@ -21,6 +22,7 @@ sealed class Result<out T> {
         fun <T> success(data: T): Result<T> = Success(data)
         fun error(exception: Exception): Result<Nothing> = Error(exception)
         fun loading(): Result<Nothing> = Loading
+        fun idle(): Result<Nothing> = Idle
     }
     
     /**

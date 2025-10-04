@@ -3,4 +3,7 @@ package com.medical.app.util
 /**
  * Excepción personalizada para la aplicación.
  */
-class AppException(message: String) : Exception(message)
+open class AppException(
+    message: String,
+    cause: Throwable? = null
+) : Exception(message, cause)

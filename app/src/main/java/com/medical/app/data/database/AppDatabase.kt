@@ -23,7 +23,8 @@ import com.medical.app.data.entities.*
         MedicoPaciente::class,
         Consulta::class,
         Tratamiento::class,
-        HistorialMedico::class
+        HistorialMedico::class,
+        Appointment::class
     ],
     version = 2, // Incremented version for the new salt column
     exportSchema = true // Habilitado para mantener un historial de migraciones
@@ -39,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun consultaDao(): ConsultaDao
     abstract fun tratamientoDao(): TratamientoDao
     abstract fun historialMedicoDao(): HistorialMedicoDao
+    abstract fun appointmentDao(): AppointmentDao
 
     companion object {
         // Nombre de la base de datos
