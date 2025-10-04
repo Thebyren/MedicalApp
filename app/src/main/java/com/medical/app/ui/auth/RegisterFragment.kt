@@ -25,9 +25,9 @@ class RegisterFragment : Fragment() {
 
     private var _binding: FragmentRegisterBinding? = null
     private val binding get() = _binding!!
-    
+
     private val viewModel: RegisterViewModel by viewModels()
-    
+
     private val userTypes = listOf(
         TipoUsuario.MEDICO to "Médico",
         TipoUsuario.PACIENTE to "Paciente"
@@ -44,47 +44,60 @@ class RegisterFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         setupUI()
         setupClickListeners()
         observeViewModel()
     }
-    
+
     private fun setupUI() {
         // Configurar el spinner de tipos de usuario
         val userTypeStrings = userTypes.map { it.second }
         val adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
+            android.R.layout.simple_dropdown_item_1line,
             userTypeStrings
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        
+        )
+
         binding.spinnerUserType.setAdapter(adapter)
     }
-    
+
     private fun setupClickListeners() {
         binding.btnRegister.setOnClickListener {
             hideKeyboard()
-            
+
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString()
             val confirmPassword = binding.etConfirmPassword.text.toString()
             val fullName = binding.etFullName.text.toString().trim()
-            val selectedUserTypeText = binding.spinnerUserType.text.toString()
-            val selectedUserType = userTypes.first { it.second == selectedUserTypeText }.first
-            
+            val selectedUserTypeText = binding.spinnerUserType.text.toString().trim()
+
+            // Validar que se haya seleccionado un tipo de usuario
+            if (selectedUserTypeText.isEmpty()) {
+                showMessage("Por favor selecciona un tipo de usuario")
+                return@setOnClickListener
+            }
+
+            // Buscar el tipo de usuario de forma segura
+            val selectedUserTypePair = userTypes.firstOrNull { it.second == selectedUserTypeText }
+
+            if (selectedUserTypePair == null) {
+                showMessage("Tipo de usuario no válido")
+                return@setOnClickListener
+            }
+
+            val selectedUserType = selectedUserTypePair.first
+
             if (validateInputs(email, password, confirmPassword, fullName)) {
                 viewModel.register(email, password, fullName, selectedUserType)
             }
         }
-        
+
         binding.tvLoginHere.setOnClickListener {
             navigateToLogin()
         }
     }
-    
+
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.registrationState.collectLatest { result ->
@@ -106,7 +119,7 @@ class RegisterFragment : Fragment() {
             }
         }
     }
-    
+
     private fun validateInputs(
         email: String,
         password: String,
@@ -114,7 +127,16 @@ class RegisterFragment : Fragment() {
         fullName: String
     ): Boolean {
         var isValid = true
-        
+
+        // Validar nombre completo
+        if (fullName.isBlank()) {
+            binding.tilFullName.error = "Por favor ingrese su nombre completo"
+            isValid = false
+        } else {
+            binding.tilFullName.error = null
+        }
+
+        // Validar email
         if (email.isBlank()) {
             binding.tilEmail.error = "Por favor ingrese su correo electrónico"
             isValid = false
@@ -124,7 +146,8 @@ class RegisterFragment : Fragment() {
         } else {
             binding.tilEmail.error = null
         }
-        
+
+        // Validar contraseña
         if (password.isBlank()) {
             binding.tilPassword.error = "Por favor ingrese una contraseña"
             isValid = false
@@ -134,24 +157,21 @@ class RegisterFragment : Fragment() {
         } else {
             binding.tilPassword.error = null
         }
-        
-        if (confirmPassword != password) {
+
+        // Validar confirmación de contraseña
+        if (confirmPassword.isBlank()) {
+            binding.tilConfirmPassword.error = "Por favor confirme su contraseña"
+            isValid = false
+        } else if (confirmPassword != password) {
             binding.tilConfirmPassword.error = "Las contraseñas no coinciden"
             isValid = false
         } else {
             binding.tilConfirmPassword.error = null
         }
-        
-        if (fullName.isBlank()) {
-            binding.tilFullName.error = "Por favor ingrese su nombre completo"
-            isValid = false
-        } else {
-            binding.tilFullName.error = null
-        }
-        
+
         return isValid
     }
-    
+
     private fun showLoading(isLoading: Boolean) {
         binding.apply {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
@@ -163,18 +183,18 @@ class RegisterFragment : Fragment() {
             spinnerUserType.isEnabled = !isLoading
         }
     }
-    
+
     private fun showMessage(message: String) {
         view?.let {
             Snackbar.make(it, message, Snackbar.LENGTH_LONG).show()
         }
     }
-    
+
     private fun navigateToLogin() {
         val action = RegisterFragmentDirections.actionRegisterFragmentToLoginFragment()
         findNavController().navigate(action)
     }
-    
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
