@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
+import com.medical.app.data.model.DoctorStats
 import com.medical.app.databinding.FragmentMedicoHomeBinding
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
@@ -136,15 +137,34 @@ class MedicoHomeFragment : Fragment() {
     }
 
     private fun setupObservers() {
+        // Cargar estadísticas del médico actual
+        val currentUser = viewModel.getCurrentUser()
+        currentUser?.let {
+            viewModel.loadDoctorStats(it.id.toString())
+        }
+        
         viewModel.stats.observe(viewLifecycleOwner) { stats ->
-            // TODO: Update UI with stats when dynamic TextViews are added to layout
-            // For now, stats are shown as static values in the XML layout
+            updateStatsUI(stats)
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
             error?.let {
                 Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
             }
+        }
+    }
+    
+    private fun updateStatsUI(stats: DoctorStats) {
+        binding.tvTotalPatients.text = stats.totalPatients.toString()
+        binding.tvAppointmentsToday.text = stats.appointmentsToday.toString()
+        binding.tvMonthlyEarnings.text = formatCurrency(stats.monthlyEarnings)
+    }
+    
+    private fun formatCurrency(amount: Double): String {
+        return if (amount == 0.0) {
+            "$0"
+        } else {
+            "$${String.format("%,.0f", amount)}"
         }
     }
 }

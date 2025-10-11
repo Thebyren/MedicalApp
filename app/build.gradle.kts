@@ -136,6 +136,12 @@ dependencies {
     
     // Gemini AI
     implementation(libs.generativeai)
+    
+    // Markwon for Markdown rendering
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
 }
 
 ksp {

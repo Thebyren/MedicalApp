@@ -60,15 +60,53 @@ class ReportsFragment : Fragment() {
 
         // Reporte Personalizado
         binding.cardCustomReport.setOnClickListener {
-            showMessage("Abriendo configuración de reporte personalizado...")
-            // TODO: Navegar a pantalla de configuración de reporte personalizado
+            showCustomReportDialog()
         }
 
         // Exportar Datos
         binding.cardExportData.setOnClickListener {
-            showMessage("Abriendo opciones de exportación...")
-            // TODO: Mostrar diálogo de opciones de exportación (PDF, Excel)
+            showExportDialog()
         }
+    }
+    
+    private fun showCustomReportDialog() {
+        val dialog = CustomReportDialog.newInstance()
+        dialog.onGenerateReport = { reportType, startDate, endDate ->
+            // Navegar al reporte con los parámetros personalizados
+            navigateToAiReport(reportType)
+            showMessage("Generando reporte personalizado...")
+        }
+        dialog.show(childFragmentManager, CustomReportDialog.TAG)
+    }
+    
+    private fun showExportDialog() {
+        val dialog = ExportDialog.newInstance()
+        dialog.onExport = { format, dataType, startDate, endDate ->
+            handleExport(format, dataType, startDate, endDate)
+        }
+        dialog.show(childFragmentManager, ExportDialog.TAG)
+    }
+    
+    private fun handleExport(
+        format: ExportDialog.ExportFormat,
+        dataType: ExportDialog.ExportDataType,
+        startDate: Long?,
+        endDate: Long?
+    ) {
+        val formatName = when (format) {
+            ExportDialog.ExportFormat.PDF -> "PDF"
+            ExportDialog.ExportFormat.EXCEL -> "Excel"
+            ExportDialog.ExportFormat.CSV -> "CSV"
+        }
+        
+        val dataTypeName = when (dataType) {
+            ExportDialog.ExportDataType.PATIENTS -> "Pacientes"
+            ExportDialog.ExportDataType.APPOINTMENTS -> "Citas"
+            ExportDialog.ExportDataType.ALL -> "Todos los datos"
+        }
+        
+        showMessage("Exportando $dataTypeName en formato $formatName...")
+        // TODO: Implementar la lógica de exportación real
     }
 
     private fun navigateToAiReport(reportType: String) {

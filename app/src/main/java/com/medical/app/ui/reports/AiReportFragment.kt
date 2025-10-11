@@ -12,6 +12,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.databinding.FragmentAiReportBinding
+import com.medical.app.util.extensions.setMarkdown
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -63,7 +64,8 @@ class AiReportFragment : Fragment() {
                 binding.errorLayout.isVisible = !state.isLoading && state.error != null
                 
                 state.report?.let { report ->
-                    binding.tvReportContent.text = report
+                    // Renderizar el markdown con formato
+                    binding.tvReportContent.setMarkdown(report)
                 }
                 
                 state.error?.let { error ->

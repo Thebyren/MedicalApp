@@ -88,9 +88,11 @@
                         android:id="@+id/tvReportContent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:lineSpacingExtra="4dp"
+                        android:lineSpacingExtra="6dp"
+                        android:lineSpacingMultiplier="1.2"
                         android:padding="16dp"
                         android:textColor="?android:attr/textColorPrimary"
+                        android:textIsSelectable="true"
                         android:textSize="14sp"
                         tools:text="# Reporte de Estadísticas Generales\n\n## Resumen Ejecutivo\n\nEl consultorio muestra un crecimiento sostenido..." />
                 </ScrollView>

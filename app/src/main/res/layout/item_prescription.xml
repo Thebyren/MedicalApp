@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Icono de medicamento -->
+        <ImageView
+            android:id="@+id/ivIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/circle_background_primary_light"
+            android:padding="12dp"
+            android:src="@drawable/ic_prescription"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/colorPrimary" />
+
+        <!-- Nombre del medicamento -->
+        <TextView
+            android:id="@+id/tvMedicamento"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/btnDelete"
+            app:layout_constraintStart_toEndOf="@id/ivIcon"
+            app:layout_constraintTop_toTopOf="@id/ivIcon"
+            tools:text="Paracetamol 500mg" />
+
+        <!-- Dosis -->
+        <TextView
+            android:id="@+id/tvDosis"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@id/tvMedicamento"
+            app:layout_constraintStart_toStartOf="@id/tvMedicamento"
+            app:layout_constraintTop_toBottomOf="@id/tvMedicamento"
+            tools:text="Dosis: 1 tableta" />
+
+        <!-- Botón eliminar -->
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Eliminar"
+            android:src="@drawable/ic_delete"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/red_500" />
+
+        <!-- Frecuencia -->
+        <TextView
+            android:id="@+id/tvFrecuencia"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/ivIcon"
+            app:layout_constraintTop_toBottomOf="@id/ivIcon"
+            tools:text="Frecuencia: Cada 8 horas" />
+
+        <!-- Duración -->
+        <TextView
+            android:id="@+id/tvDuracion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/ivIcon"
+            app:layout_constraintTop_toBottomOf="@id/tvFrecuencia"
+            tools:text="Duración: 7 días" />
+
+        <!-- Indicaciones -->
+        <TextView
+            android:id="@+id/tvIndicaciones"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/rounded_background_light"
+            android:padding="8dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/ivIcon"
+            app:layout_constraintTop_toBottomOf="@id/tvDuracion"
+            tools:text="Tomar con alimentos. No exceder la dosis recomendada." />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

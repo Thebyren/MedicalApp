@@ -107,10 +107,11 @@
                             android:src="@drawable/ic_patient" />
 
                         <TextView
+                            android:id="@+id/tvTotalPatients"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="12"
+                            android:text="0"
                             android:textAppearance="?attr/textAppearanceHeadline5"
                             android:textColor="?attr/colorPrimary" />
 
@@ -147,10 +148,11 @@
                             android:src="@drawable/ic_appointment" />
 
                         <TextView
+                            android:id="@+id/tvAppointmentsToday"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="5"
+                            android:text="0"
                             android:textAppearance="?attr/textAppearanceHeadline5"
                             android:textColor="@color/green_500" />
 
@@ -186,10 +188,11 @@
                             android:src="@drawable/ic_revenue" />
 
                         <TextView
+                            android:id="@+id/tvMonthlyEarnings"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="$1,250"
+                            android:text="$0"
                             android:textAppearance="?attr/textAppearanceHeadline5"
                             android:textColor="@color/purple_500" />
 
