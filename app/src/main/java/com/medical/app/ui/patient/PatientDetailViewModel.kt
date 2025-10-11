@@ -75,26 +75,20 @@ class PatientDetailViewModel @Inject constructor(
     }
 }
 
-// Assume Paciente.kt has this extension function
+// Extension function to convert Paciente entity to Patient model
 fun Paciente.toModel(): Patient {
     return Patient(
         id = this.id,
-        firstName = this.nombre,
+        name = this.nombre,
         lastName = this.apellidos,
-        //dni = this.dni,
-        //birthDate = this.fechaNacimiento,
+        dni = this.numeroSeguridadSocial ?: "",
+        birthdate = this.fechaNacimiento,
         gender = this.genero.toString(),
-        bloodType = this.bloodType,
-        //phoneNumber = this.telefono,
-        email = this.email,
-        //address = this.direccion,
-        allergies = this.allergies,
-        notes = this.notes,
-        name = TODO(),
-        dni = TODO(),
-        birthdate = TODO(),
-        phone = TODO(),
-        address = TODO(),
-        //createdAt = this.fechaCreacion
+        phone = this.telefono ?: "",
+        address = this.direccion ?: "",
+        email = this.email ?: "",
+        bloodType = this.bloodType ?: "",
+        allergies = this.allergies ?: "",
+        notes = this.notes ?: ""
     )
 }

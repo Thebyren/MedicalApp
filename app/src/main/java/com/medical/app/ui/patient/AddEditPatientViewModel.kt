@@ -3,6 +3,7 @@ package com.medical.app.ui.patient
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.data.local.SessionManager
 import com.medical.app.data.model.Patient
 import com.medical.app.data.model.toEntity
 import com.medical.app.data.repository.PacienteRepository
@@ -16,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddEditPatientViewModel @Inject constructor(
     private val repository: PacienteRepository,
+    private val sessionManager: SessionManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,19 +39,25 @@ class AddEditPatientViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val patient = repository.getById(patientId.toInt())
                 if (patient != null) {
+                    val genderDisplay = when (patient.genero?.name) {
+                        "MASCULINO" -> "Masculino"
+                        "FEMENINO" -> "Femenino"
+                        "OTRO" -> "Otro"
+                        else -> ""
+                    }
+                    
                     _uiState.value = _uiState.value.copy(
                         firstName = patient.nombre,
                         lastName = patient.apellidos,
                         dateOfBirth = patient.fechaNacimiento,
-                        gender = (patient.genero ?: "") as String,
+                        gender = genderDisplay,
                         phoneNumber = patient.telefono ?: "",
+                        dni = patient.numeroSeguridadSocial ?: "",
+                        email = patient.email,
                         address = patient.direccion ?: "",
-                        // The following fields are not in the Patient model.
-                        // This suggests a mismatch between UI state and data models.
-                        // email = patient.email ?: "",
-                        // bloodType = patient.bloodType ?: "",
-                        // allergies = patient.allergies ?: "",
-                        // notes = patient.notes ?: "",
+                        bloodType = patient.bloodType,
+                        allergies = patient.allergies,
+                        notes = patient.notes,
                         isLoading = false
                     )
                 } else {
@@ -79,6 +87,9 @@ class AddEditPatientViewModel @Inject constructor(
             is AddEditPatientEvent.PhoneNumberChanged -> {
                 _uiState.value = _uiState.value.copy(phoneNumber = event.value)
             }
+            is AddEditPatientEvent.DniChanged -> {
+                _uiState.value = _uiState.value.copy(dni = event.value)
+            }
             is AddEditPatientEvent.EmailChanged -> {
                 _uiState.value = _uiState.value.copy(email = event.value)
             }
@@ -107,7 +118,7 @@ class AddEditPatientViewModel @Inject constructor(
         if (currentState.firstName.isBlank() || currentState.lastName.isBlank() || 
             currentState.dateOfBirth == null || currentState.gender.isBlank() || 
             currentState.phoneNumber.isBlank()) {
-            _events.value = Event.ShowErrorMessage("Please fill in all required fields")
+            _events.value = Event.ShowErrorMessage("Por favor completa todos los campos requeridos")
             return
         }
         
@@ -115,25 +126,34 @@ class AddEditPatientViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
+                // Obtener el usuario actual
+                val currentUser = sessionManager.getCurrentUser()
+                if (currentUser == null) {
+                    _events.value = Event.ShowErrorMessage("Error: No hay sesión activa")
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    return@launch
+                }
+                
                 val patient = Patient(
                     id = currentPatientId?.toIntOrNull() ?: 0,
                     name = currentState.firstName.trim(),
                     lastName = currentState.lastName.trim(),
-                    address = currentState.address.trim(),
-                    phone = currentState.phoneNumber.trim(),
-                    birthdate = currentState.dateOfBirth!!,
+                    dni = currentState.dni.trim(),
+                    birthdate = currentState.dateOfBirth,
                     gender = currentState.gender,
-                    // These fields are in the model but not the UI state.
-                    // This suggests a mismatch between UI state and data models.
-                    occupation = "",
-                    maritalStatus = ""
+                    phone = currentState.phoneNumber.trim(),
+                    address = currentState.address.trim(),
+                    email = currentState.email.trim(),
+                    bloodType = currentState.bloodType,
+                    allergies = currentState.allergies,
+                    notes = currentState.notes
                 )
-                
-                repository.insert(patient.toEntity())
+
+                repository.insert(patient.toEntity(currentUser.id))
                 _events.value = Event.NavigateBackWithResult(true)
                 
             } catch (e: Exception) {
-                _events.value = Event.ShowErrorMessage("Error saving patient: ${e.message}")
+                _events.value = Event.ShowErrorMessage("Error al guardar paciente: ${e.message}")
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
@@ -157,6 +177,7 @@ data class AddEditPatientState  constructor(
     val dateOfBirth: Date? = null,
     val gender: String = "",
     val phoneNumber: String = "",
+    val dni: String = "",
     val email: String = "",
     val address: String = "",
     val bloodType: String = "",
@@ -170,6 +191,7 @@ sealed class AddEditPatientEvent {
     data class DateOfBirthChanged(val date: Date) : AddEditPatientEvent()
     data class GenderSelected(val gender: String) : AddEditPatientEvent()
     data class PhoneNumberChanged(val value: String) : AddEditPatientEvent()
+    data class DniChanged(val value: String) : AddEditPatientEvent()
     data class EmailChanged(val value: String) : AddEditPatientEvent()
     data class AddressChanged(val value: String) : AddEditPatientEvent()
     data class BloodTypeSelected(val bloodType: String) : AddEditPatientEvent()

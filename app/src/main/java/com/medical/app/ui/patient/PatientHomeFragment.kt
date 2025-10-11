@@ -13,7 +13,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
-import com.medical.app.data.model.Appointment
+import com.medical.app.data.entities.Appointment
 import com.medical.app.databinding.FragmentPatientHomeBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch

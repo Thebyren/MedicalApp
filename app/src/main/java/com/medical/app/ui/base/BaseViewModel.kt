@@ -2,6 +2,7 @@ package com.medical.app.ui.base
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.R
 import com.medical.app.util.AppException
 import com.medical.app.util.ErrorHandler
 import kotlinx.coroutines.CoroutineExceptionHandler

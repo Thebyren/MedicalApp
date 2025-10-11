@@ -2,11 +2,12 @@ package com.medical.app.ui.medico
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.medical.app.data.model.Medico
+import com.medical.app.data.entities.Medico
 import com.medical.app.data.repository.MedicoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,7 +40,7 @@ class MedicosListViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true) }
                 
-                medicoRepository.getAllMedicos()
+                medicoRepository.getAll()
                     .collect { medicos ->
                         _uiState.update { state ->
                             state.copy(

@@ -126,13 +126,13 @@ class MedicoViewModel @Inject constructor(
             setState(MedicoState.Loading)
             
             try {
-                val result = if (medico.id == 0) {
+                val result: Long = if (medico.id == 0) {
                     medicoRepository.insert(medico)
                 } else {
-                    medicoRepository.update(medico)
+                    medicoRepository.update(medico).toLong()
                 }
                 
-                if (result > 0) {
+                if (result > 0L) {
                     postEvent(MedicoEvent.NavigateBack)
                 } else {
                     throw Exception("Error al guardar el médico")

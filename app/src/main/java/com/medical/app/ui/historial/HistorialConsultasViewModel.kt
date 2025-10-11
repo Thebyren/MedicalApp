@@ -2,7 +2,7 @@ package com.medical.app.ui.historial
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.medical.app.data.model.Consulta
+import com.medical.app.data.entities.Consulta
 import com.medical.app.data.repository.ConsultaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -58,16 +58,16 @@ class HistorialConsultasViewModel @Inject constructor(
     ): List<Consulta> {
         return consultas.filter { consulta ->
             val matchesSearch = query.isEmpty() ||
-                    consulta.motivo.contains(query, ignoreCase = true) ||
+                    consulta.motivoConsulta.contains(query, ignoreCase = true) ||
                     consulta.diagnostico?.contains(query, ignoreCase = true) == true ||
-                    consulta.sintomas?.contains(query, ignoreCase = true) == true
+                    consulta.observaciones?.contains(query, ignoreCase = true) == true
 
             val matchesDate = if (dateRange != null) {
-                consulta.fecha in dateRange.first..dateRange.second
+                consulta.fechaConsulta in dateRange.first..dateRange.second
             } else true
 
             matchesSearch && matchesDate
-        }.sortedByDescending { it.fecha }
+        }.sortedByDescending { it.fechaConsulta }
     }
 
     fun loadConsultas(patientId: Long) {

@@ -2,8 +2,8 @@ package com.medical.app.ui.consulta
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.medical.app.data.model.Consulta
 import com.medical.app.data.repository.ConsultaRepository
+import com.medical.app.data.entities.Consulta
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,13 +110,12 @@ class RegistroConsultaViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val consulta = Consulta(
-                    patientId = patientId,
-                    fecha = Date(),
-                    motivo = motivo,
-                    sintomas = sintomas,
+                    medicoId = 0, // TODO: Get from session
+                    pacienteId = patientId.toInt(),
+                    fechaConsulta = Date(),
+                    motivoConsulta = motivo,
                     diagnostico = diagnostico,
-                    tratamiento = tratamiento,
-                    notas = notas,
+                    observaciones = "$sintomas\n\nTratamiento: $tratamiento\n\nNotas: $notas",
                     proximaCita = proximaCita
                 )
                 consultaRepository.insertConsulta(consulta)

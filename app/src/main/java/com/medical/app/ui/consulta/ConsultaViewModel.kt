@@ -14,6 +14,7 @@ import com.medical.app.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
@@ -93,11 +94,18 @@ class ConsultaViewModel @Inject constructor(
             try {
                 // Aquí implementarías la lógica para filtrar las consultas
                 // según los filtros actuales (_fechaFiltro, _medicoFiltro, _pacienteFiltro)
-                // Por ahora, cargamos todas las consultas
-                consultaRepository.getAll()
-                    .collect { consultas ->
-                        setState(ConsultaState.Success(consultas))
-                    }
+                val pacienteId = _pacienteFiltro.value
+
+                if (pacienteId != null) {
+                    consultaRepository.getConsultasByPatient(pacienteId.toLong())
+                        .collect { consultas ->
+                            setState(ConsultaState.Success(consultas))
+                        }
+                } else {
+                    // Si no hay un paciente seleccionado, mostramos una lista vacía.
+                    // O podrías decidir cargar las consultas de un paciente por defecto o mostrar un mensaje.
+                    setState(ConsultaState.Success(emptyList()))
+                }
             } catch (e: Exception) {
                 setState(ConsultaState.Error(e.message ?: "Error al cargar las consultas"))
                 postEvent(ConsultaEvent.ShowError(e.message ?: "Error desconocido"))
@@ -110,15 +118,13 @@ class ConsultaViewModel @Inject constructor(
      */
     fun loadConsultaDetalle(consultaId: Int) {
         viewModelScope.launch {
-            setState(ConsultaState.Loading)
-
             try {
                 val consulta = consultaRepository.getConsultaById(consultaId.toLong()) // Corregido
                 if (consulta != null) {
                     // Cargar información relacionada en paralelo
                     val medico = medicoRepository.getById(consulta.medicoId)
                     val paciente = pacienteRepository.getById(consulta.pacienteId)
-                    val tratamientos = tratamientoRepository.getByConsultaId(consultaId)
+                    val tratamientos = tratamientoRepository.getByConsultaId(consultaId).first()
 
                     setState(
                         ConsultaState.ConsultaDetalle(
@@ -145,16 +151,16 @@ class ConsultaViewModel @Inject constructor(
             setState(ConsultaState.Loading)
             
             try {
-                val result = if (consulta.id == 0) {
-                    consultaRepository.insert(consulta)
+                if (consulta.id.toLong() == 0L) { // Use Long for ID comparison
+                    val newId = consultaRepository.insertConsulta(consulta)
+                    if (newId > 0) {
+                        postEvent(ConsultaEvent.NavigateBack)
+                    } else {
+                        throw Exception("Error al insertar la consulta")
+                    }
                 } else {
-                    consultaRepository.update(consulta)
-                }
-                
-                if (result > 0) {
-                    postEvent(ConsultaEvent.NavigateBack)
-                } else {
-                    throw Exception("Error al guardar la consulta")
+                    consultaRepository.updateConsulta(consulta)
+                    postEvent(ConsultaEvent.NavigateBack) // Assume success if no exception
                 }
             } catch (e: Exception) {
                 setState(ConsultaState.Error(e.message ?: "Error al guardar la consulta"))
@@ -171,14 +177,10 @@ class ConsultaViewModel @Inject constructor(
             setState(ConsultaState.Loading)
 
             try {
-                val consulta = consultaRepository.getConsultaById(consultaId.toLong()) // Corregido
+                val consulta = consultaRepository.getConsultaById(consultaId.toLong())
                 if (consulta != null) {
-                    val result = consultaRepository.delete(consulta)
-                    if (result > 0) {
-                        postEvent(ConsultaEvent.NavigateBack)
-                    } else {
-                        throw Exception("No se pudo eliminar la consulta")
-                    }
+                    consultaRepository.deleteConsulta(consulta)
+                    postEvent(ConsultaEvent.NavigateBack) // Assume success if no exception
                 } else {
                     throw Exception("Consulta no encontrada")
                 }
@@ -195,7 +197,7 @@ class ConsultaViewModel @Inject constructor(
     fun loadTratamientos(consultaId: Int) {
         viewModelScope.launch {
             try {
-                val tratamientos = tratamientoRepository.getByConsultaId(consultaId)
+                val tratamientos = tratamientoRepository.getByConsultaId(consultaId).first()
                 postEvent(ConsultaEvent.ShowTratamientos(tratamientos))
             } catch (e: Exception) {
                 postEvent(ConsultaEvent.ShowError("Error al cargar los tratamientos: ${e.message}"))

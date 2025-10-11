@@ -1,11 +1,12 @@
 package com.medical.app.ui.historial
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.medical.app.data.model.Consulta
+import com.medical.app.data.entities.Consulta
 import com.medical.app.databinding.ItemConsultaHistorialBinding
 import java.text.SimpleDateFormat
 import java.util.*
@@ -54,13 +55,13 @@ class HistorialConsultasAdapter(
         fun bind(consulta: Consulta) {
             binding.apply {
                 // Formatear fecha y hora
-                val fecha = Date(consulta.fecha.time)
+                val fecha = Date(consulta.fechaConsulta.time)
                 tvFecha.text = dateFormat.format(fecha)
                 tvHora.text = timeFormat.format(fecha)
                 
                 // Mostrar información de la consulta
-                tvMotivo.text = consulta.motivo.takeIf { it.isNotBlank() } ?: "Sin motivo"
-                tvDiagnostico.text = consulta.diagnostico.takeIf { it.isNotBlank() } ?: "Sin diagnóstico"
+                tvMotivo.text = consulta.motivoConsulta.takeIf { it.isNotBlank() } ?: "Sin motivo"
+                tvDiagnostico.text = consulta.diagnostico?.takeIf { it.isNotBlank() } ?: "Sin diagnóstico"
                 
                 // Mostrar próxima cita si existe
                 consulta.proximaCita?.let { proximaCita ->

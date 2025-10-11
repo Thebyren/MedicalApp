@@ -10,24 +10,28 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
-import com.medical.app.data.model.Consulta
+import com.medical.app.data.entities.Consulta
 import com.medical.app.databinding.FragmentHistorialConsultasBinding
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class HistorialConsultasFragment : Fragment() {
@@ -36,7 +40,6 @@ class HistorialConsultasFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val viewModel: HistorialConsultasViewModel by viewModels()
-    private val args: HistorialConsultasFragmentArgs by navArgs()
     
     private lateinit var consultasAdapter: HistorialConsultasAdapter
     
@@ -58,13 +61,13 @@ class HistorialConsultasFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupToolbar()
-        setupSearchView()
         setupRecyclerView()
         setupClickListeners()
         setupObservers()
         
-        // Cargar consultas del paciente
-        viewModel.setPatientId(args.patientId)
+        // Cargar consultas del paciente (get from arguments or session)
+        val patientId = arguments?.getLong("patientId") ?: 1L
+        viewModel.setPatientId(patientId)
     }
     
     private fun setupToolbar() {
@@ -94,17 +97,6 @@ class HistorialConsultasFragment : Fragment() {
         })
     }
     
-    private fun setupSearchView() {
-        binding.searchView.setupWithSearchBar(binding.searchBar)
-        
-        // Configurar búsqueda con debounce
-        binding.searchView
-            .editText
-            .doAfterTextChanged { editable ->
-                searchQuery = editable?.toString() ?: ""
-                viewModel.setSearchQuery(searchQuery)
-            }
-    }
     
     private fun setupRecyclerView() {
         consultasAdapter = HistorialConsultasAdapter { consulta ->
@@ -131,62 +123,67 @@ class HistorialConsultasFragment : Fragment() {
     }
     
     private fun setupObservers() {
-        viewModel.filteredConsultas
-            .onEach { consultas ->
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filteredConsultas.collect { consultas ->
                 consultasAdapter.submitList(consultas)
                 updateEmptyState(consultas.isEmpty())
             }
-            .launchIn(viewLifecycleOwner.lifecycleScope)
-        
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
         
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                showError(it)
-                viewModel.clearError()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoading.collect { isLoading ->
+                binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            }
+        }
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.error.collect { error ->
+                error?.let {
+                    showError(it)
+                    viewModel.clearError()
+                }
             }
         }
         
         // Observar cambios en el rango de fechas
-        viewModel.uiState
-            .map { it.dateRange }
-            .distinctUntilChanged()
-            .onEach { dateRange ->
-                dateRange?.let { (start, end) ->
-                    binding.chipRangoFechas.text = "${dateFormat.format(start)} - ${dateFormat.format(end)}"
-                    binding.chipRangoFechas.visibility = View.VISIBLE
-                } ?: run {
-                    binding.chipRangoFechas.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState
+                .map { it.dateRange }
+                .distinctUntilChanged()
+                .collect { dateRange ->
+                    dateRange?.let { (start, end) ->
+                        binding.chipRangoFechas.text = "${dateFormat.format(start)} - ${dateFormat.format(end)}"
+                        binding.chipRangoFechas.visibility = View.VISIBLE
+                    } ?: run {
+                        binding.chipRangoFechas.visibility = View.GONE
+                    }
                 }
-            }
-            .launchIn(viewLifecycleOwner.lifecycleScope)
+        }
     }
     
     private fun updateEmptyState(isEmpty: Boolean) {
         val noResults = isEmpty && (searchQuery.isNotEmpty() || 
                 binding.chipRangoFechas.visibility == View.VISIBLE)
         
-        binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.layoutEmptyState. root.visibility = if (isEmpty) View.VISIBLE else View.GONE
         binding.rvConsultas.visibility = if (isEmpty) View.GONE else View.VISIBLE
         
         if (isEmpty) {
-            val titleView = binding.layoutEmptyState.findViewById<TextView>(R.id.tvEmptyTitle)
-            val subtitleView = binding.layoutEmptyState.findViewById<TextView>(R.id.tvEmptySubtitle)
+            val titleView = binding.root.findViewById<TextView>(R.id.tvEmptyText)
+            val subtitleView = binding.root.findViewById<TextView>(R.id.tvEmptySubtext)
             
             when {
                 noResults -> {
-                    titleView.text = getString(R.string.sin_resultados)
-                    subtitleView.text = getString(R.string.intenta_cambiar_filtros)
+                    titleView?.text = getString(R.string.sin_resultados)
+                    subtitleView?.text = getString(R.string.intenta_cambiar_filtros)
                 }
                 searchQuery.isNotEmpty() -> {
-                    titleView.text = getString(R.string.sin_consultas_busqueda, "\"$searchQuery\"")
-                    subtitleView.text = getString(R.string.intenta_otra_busqueda)
+                    titleView?.text = getString(R.string.sin_consultas_busqueda, "\"$searchQuery\"")
+                    subtitleView?.text = getString(R.string.intenta_otra_busqueda)
                 }
                 else -> {
-                    titleView.text = getString(R.string.sin_consultas)
-                    subtitleView.text = getString(R.string.no_hay_consultas_registradas_periodo)
+                    titleView?.text = getString(R.string.sin_consultas)
+                    subtitleView?.text = getString(R.string.no_hay_consultas_registradas_periodo)
                 }
             }
         }

@@ -13,7 +13,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.medical.app.BuildConfig
 /**
  * Manejador global de excepciones no capturadas
  */
@@ -120,7 +119,7 @@ class GlobalExceptionHandler @Inject constructor(
      */
     private fun getDeviceInfo(): String {
         return """
-            |App Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})
+            |App Version: ${com.medical.app.BuildConfig.VERSION_NAME} (${com.medical.app.BuildConfig.VERSION_CODE})
             |Android Version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})
             |Device: ${Build.MANUFACTURER} ${Build.MODEL}
             |Board: ${Build.BOARD}
@@ -193,7 +192,7 @@ class GlobalExceptionHandler @Inject constructor(
         /**
          * Inicializa el manejador global de excepciones
          */
-        fun initialize(application: Application) {
+        fun initialize() {
             // La inyección de dependencias se encargará de crear la instancia
         }
     }

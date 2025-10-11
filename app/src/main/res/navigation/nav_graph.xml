@@ -17,9 +17,6 @@
             android:id="@+id/action_medicoHomeFragment_to_patientListFragment"
             app:destination="@id/nav_patient" />
         <action
-            android:id="@+id/action_medicoHomeFragment_to_addPatientFragment"
-            app:destination="@id/addPatientFragment" />
-        <action
             android:id="@+id/action_medicoHomeFragment_to_newAppointmentFragment"
             app:destination="@id/newAppointmentFragment" />
         <action
@@ -99,12 +96,6 @@
 
     <!-- Other App Destinations -->
     <fragment
-        android:id="@+id/addPatientFragment"
-        android:name="com.medical.app.ui.patient.AddPatientFragment"
-        android:label="Agregar Paciente"
-        tools:layout="@layout/fragment_add_patient" />
-
-    <fragment
         android:id="@+id/newAppointmentFragment"
         android:name="com.medical.app.ui.appointment.NewAppointmentFragment"
         android:label="Nueva Cita" />
@@ -122,7 +113,20 @@
     <fragment
         android:id="@+id/reportsFragment"
         android:name="com.medical.app.ui.reports.ReportsFragment"
-        android:label="Reportes" />
+        android:label="Reportes">
+        <action
+            android:id="@+id/action_reportsFragment_to_aiReportFragment"
+            app:destination="@id/aiReportFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aiReportFragment"
+        android:name="com.medical.app.ui.reports.AiReportFragment"
+        android:label="Reporte AI">
+        <argument
+            android:name="reportType"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/settingsFragment"

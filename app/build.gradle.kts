@@ -1,19 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.navigation.safeargs)
     alias(libs.plugins.hilt.android)
+    id("com.google.firebase.appdistribution")
 }
 
 android {
     namespace = "com.medical.app"
     compileSdk = 36
-
     defaultConfig {
         applicationId = "com.medical.app"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -21,6 +21,15 @@ android {
         
         // Habilitar el uso de Java 8 features
         vectorDrawables.useSupportLibrary = true
+        
+        // Leer API key de Gemini desde local.properties
+        val properties = org.jetbrains.kotlin.konan.properties.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { properties.load(it) }
+        }
+        val geminiApiKey = properties.getProperty("GEMINI_API_KEY") ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -32,33 +41,24 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
     
     // Habilitar el uso de ViewBinding
     buildFeatures {
         buildConfig = true
         viewBinding = true
     }
-    
-    // Configuración de Kotlin
-    kotlinOptions {
-        jvmTarget = "11"
-    }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+kotlin {
+    jvmToolchain(11)
 }
 
 dependencies {
+    implementation("com.google.android.material:material:1.13.0")
     // Dependencias principales de Android
     implementation(libs.hilt.android)
-    implementation(libs.firebase.appdistribution.gradle)
+
     implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.paging.runtime.ktx)
     ksp(libs.hilt.compiler)
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     ksp(libs.androidx.room.compiler)
     
     // Lifecycle components (ViewModel & LiveData)
@@ -103,6 +104,8 @@ dependencies {
     // Hilt testing
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     
     // MockWebServer para pruebas de red
     testImplementation(libs.mockwebserver)
@@ -125,8 +128,22 @@ dependencies {
     implementation(libs.swiperefreshlayout)
 
     // web services
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.gson)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    
+    // Gemini AI
+    implementation(libs.generativeai)
+    
+    // Markwon for Markdown rendering
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }

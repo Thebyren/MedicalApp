@@ -1,6 +1,7 @@
 package com.medical.app.data.dao
 
 import androidx.lifecycle.LiveData
+import androidx.paging.PagingSource
 import androidx.room.*
 import com.medical.app.data.entities.Consulta
 import kotlinx.coroutines.flow.Flow
@@ -65,4 +66,7 @@ interface ConsultaDao : BaseDao<Consulta> {
 
     @Query("DELETE FROM consultas WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM consultas ORDER BY fechaConsulta DESC")
+    fun getConsultasPagingSource(): PagingSource<Int, Consulta>
 }

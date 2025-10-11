@@ -11,6 +11,7 @@
     <string name="error">Error</string>
     <string name="advertencia">Advertencia</string>
     <string name="informacion">Información</string>
+    <string name="confirmation">Confirmación</string>
     <string name="exito">Éxito</string>
     <string name="intentar_nuevamente">Intentar nuevamente</string>
     <string name="cerrar">Cerrar</string>
@@ -92,6 +93,7 @@
     <string name="password">Contraseña</string>
     <string name="login">Iniciar Sesión</string>
     <string name="register_here">Registrarse aquí</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
     <string name="dashboard">Dashboard</string>
     <string name="welcome_back">Bienvenido de nuevo</string>
     <string name="next_appointment">Próxima cita</string>

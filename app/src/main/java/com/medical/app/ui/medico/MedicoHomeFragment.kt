@@ -6,14 +6,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
+import com.medical.app.data.model.DoctorStats
 import com.medical.app.databinding.FragmentMedicoHomeBinding
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.util.*
 
+@AndroidEntryPoint
 class MedicoHomeFragment : Fragment() {
 
     private var _binding: FragmentMedicoHomeBinding? = null
@@ -31,18 +35,15 @@ class MedicoHomeFragment : Fragment() {
     }
 
 
-override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    super.onViewCreated(view, savedInstanceState)
-    
-    setupToolbar()
-    setupBottomNavigation()
-    setupQuickActions()
-    setupObservers()
-    updateWelcomeMessage()
-    
-    // Cargar estadísticas del médico
-    viewModel.loadDoctorStats("doctor_id") // Reemplazar con el ID real del médico
-}
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupToolbar()
+        setupBottomNavigation()
+        setupQuickActions()
+        setupObservers()
+        updateWelcomeMessage()
+    }
 
 
     private fun setupToolbar() {
@@ -60,7 +61,7 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     private fun setupQuickActions() {
         // Agregar Paciente
         binding.cardAddPatient.setOnClickListener {
-            findNavController().navigate(R.id.action_medicoHomeFragment_to_addPatientFragment)
+            findNavController().navigate(R.id.action_medicoHomeFragment_to_patientListFragment)
         }
 
         // Nueva Cita
@@ -90,13 +91,21 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     }
 
     private fun updateWelcomeMessage() {
-        val currentDate = SimpleDateFormat("EEEE, d 'de' MMMM", Locale.getDefault())
-            .format(Date())
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        // Obtener el usuario actual desde SessionManager
+        val currentUser = viewModel.getCurrentUser()
         
-        // Aquí podrías obtener el nombre del médico desde tu ViewModel o preferencias
-        val doctorName = "Pérez" // Reemplazar con el nombre real del médico
-        binding.textWelcome.text = getString(R.string.welcome_doctor, doctorName, currentDate)
+        // Actualizar el mensaje de bienvenida con el nombre del médico
+        val welcomeMessage = if (currentUser != null) {
+            "¡Bienvenido, Dr. ${currentUser.nombreCompleto}!"
+        } else {
+            "¡Bienvenido, Doctor!"
+        }
+        binding.tvWelcome.text = welcomeMessage
+        
+        // Actualizar la fecha actual
+        val dateFormat = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy", Locale("es", "ES"))
+        val currentDate = dateFormat.format(Date())
+        binding.tvDate.text = "Hoy es $currentDate"
     }
 
     private fun showMoreOptions() {
@@ -126,25 +135,36 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onDestroyView()
         _binding = null
     }
+
     private fun setupObservers() {
-    viewModel.stats.observe(viewLifecycleOwner) { stats ->
-        // Actualizar la UI con las estadísticas
-        binding.tvAppointmentsCount.text = stats.appointmentsToday.toString()
-        binding.tvPatientsCount.text = stats.totalPatients.toString()
-        binding.tvEarnings.text = "$${stats.monthlyEarnings}"
-    }
-    
-    viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-        // Mostrar/ocultar indicador de carga
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-    }
-    
-    viewModel.error.observe(viewLifecycleOwner) { error ->
-        error?.let {
-            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-            viewModel.clearError()
+        // Cargar estadísticas del médico actual
+        val currentUser = viewModel.getCurrentUser()
+        currentUser?.let {
+            viewModel.loadDoctorStats(it.id.toString())
+        }
+        
+        viewModel.stats.observe(viewLifecycleOwner) { stats ->
+            updateStatsUI(stats)
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
         }
     }
-}
-
+    
+    private fun updateStatsUI(stats: DoctorStats) {
+        binding.tvTotalPatients.text = stats.totalPatients.toString()
+        binding.tvAppointmentsToday.text = stats.appointmentsToday.toString()
+        binding.tvMonthlyEarnings.text = formatCurrency(stats.monthlyEarnings)
+    }
+    
+    private fun formatCurrency(amount: Double): String {
+        return if (amount == 0.0) {
+            "$0"
+        } else {
+            "$${String.format("%,.0f", amount)}"
+        }
+    }
 }

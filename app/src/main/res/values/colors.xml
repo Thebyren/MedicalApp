@@ -24,7 +24,9 @@
     <color name="purple_500">#9C27B0</color>
     <color name="orange_500">#FF9800</color>
     <color name="red_500">#F44336</color>
+    <color name="red_700">#F44447</color>
     <color name="teal_500">#009688</color>
+    <color name="grey_500">#656565</color>
     <color name="grey_600">#757575</color>
     <color name="light_red_100">#8A4C47</color>
     <color name="light_teal_100">#8BC34A</color>

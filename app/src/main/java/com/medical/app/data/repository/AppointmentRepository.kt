@@ -2,8 +2,6 @@ package com.medical.app.data.repository
 
 import com.medical.app.data.dao.AppointmentDao
 import com.medical.app.data.entities.Appointment
-import com.medical.app.data.model.Appointment
-import com.medical.app.data.entities.Appointment as AppointmentEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Date
@@ -11,37 +9,37 @@ import javax.inject.Inject
 
 class AppointmentRepository @Inject constructor(private val appointmentDao: AppointmentDao) {
 
-    fun getUpcomingAppointments(patientId:Long,date: Date): Flow<List<AppointmentEntity>> {
+    fun getUpcomingAppointments(patientId:Long,date: Date): Flow<List<Appointment>> {
         return appointmentDao.getUpcomingAppointments(patientId,date).map { entities ->
             entities.map { it.toModel() }
         }
     }
 
-    fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<AppointmentEntity>> {
+    fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<Appointment>> {
         return appointmentDao.getAppointmentsForDateRange(startDate, endDate).map { entities ->
             entities.map { it.toModel() }
         }
     }
 
-    suspend fun getAppointmentById(id: Long): AppointmentEntity? {
+    suspend fun getAppointmentById(id: Long): Appointment? {
         return appointmentDao.getAppointmentById(id)?.toModel()
     }
 
-    suspend fun insertAppointment(appointment: AppointmentEntity) {
+    suspend fun insertAppointment(appointment: Appointment) {
         appointmentDao.insert(appointment.toEntity())
     }
 
-    suspend fun updateAppointment(appointment: AppointmentEntity) {
+    suspend fun updateAppointment(appointment: Appointment) {
         appointmentDao.update(appointment.toEntity())
     }
 
-    suspend fun deleteAppointment(appointment: AppointmentEntity) {
+    suspend fun deleteAppointment(appointment: Appointment) {
         appointmentDao.delete(appointment.toEntity())
     }
 }
 
 // Mapper functions
-private fun AppointmentEntity.toModel(): AppointmentEntity {
+private fun com.medical.app.data.entities.Appointment.toModel(): Appointment {
     return Appointment(
         id = this.id,
         patientId = this.patientId,
@@ -58,8 +56,8 @@ private fun AppointmentEntity.toModel(): AppointmentEntity {
     )
 }
 
-private fun Appointment.toEntity(): AppointmentEntity {
-    return AppointmentEntity(
+private fun Appointment.toEntity(): com.medical.app.data.entities.Appointment {
+    return com.medical.app.data.entities.Appointment(
         id = this.id,
         patientId = this.patientId,
         doctorId = this.doctorId,
@@ -67,7 +65,7 @@ private fun Appointment.toEntity(): AppointmentEntity {
         description = this.description,
         dateTime = this.dateTime,
         duration = this.duration,
-        status = AppointmentEntity.AppointmentStatus.valueOf(this.status.name),
+        status = com.medical.app.data.entities.Appointment.AppointmentStatus.valueOf(this.status.name),
         type = this.type,
         notes = this.notes,
         createdAt = this.createdAt,

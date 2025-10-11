@@ -2,7 +2,7 @@ package com.medical.app.ui.patient
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.medical.app.data.model.Appointment
+import com.medical.app.data.entities.Appointment
 import com.medical.app.data.repository.AppointmentRepository
 import com.medical.app.data.repository.PacienteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

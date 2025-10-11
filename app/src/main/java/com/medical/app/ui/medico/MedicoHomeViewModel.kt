@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.data.entities.Usuario
+import com.medical.app.data.local.SessionManager
 import com.medical.app.data.model.DoctorStats
 import com.medical.app.data.repository.AppointmentRepository
 import com.medical.app.data.repository.PacienteRepository
@@ -16,14 +18,19 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicoHomeViewModel @Inject constructor(
     private val appointmentRepository: AppointmentRepository,
-    private val patientRepository: PacienteRepository
+    private val patientRepository: PacienteRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _stats = MutableLiveData<DoctorStats>()
     val stats: LiveData<DoctorStats> = _stats
-
+    
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
+    
+    fun getCurrentUser(): Usuario? {
+        return sessionManager.getCurrentUser()
+    }
 
     fun loadDoctorStats(doctorId: String) {
         viewModelScope.launch {

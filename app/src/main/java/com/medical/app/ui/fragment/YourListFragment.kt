@@ -9,14 +9,12 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.medical.app.databinding.FragmentYourListBinding
-import com.medical.app.ui.adapter.PagingAdapter
-import com.medical.app.ui.viewmodel.PagingViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class YourListFragment : Fragment() {
+class ConsultaListFragment : Fragment() {
 
     private var _binding: FragmentYourListBinding? = null
     private val binding get() = _binding!!
@@ -39,9 +37,6 @@ class YourListFragment : Fragment() {
         setupRecyclerView()
         setupObservers()
         setupSwipeRefresh()
-        
-        // Cargar datos iniciales
-        viewModel.loadData()
     }
     
     private fun setupRecyclerView() {
@@ -50,9 +45,8 @@ class YourListFragment : Fragment() {
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             setHasFixedSize(true)
-            this.adapter = this@YourListFragment.adapter
+            this.adapter = this@ConsultaListFragment.adapter
             
-            // Agregar espacio entre elementos
             addItemDecoration(
                 androidx.recyclerview.widget.DividerItemDecoration(
                     context,
@@ -69,16 +63,14 @@ class YourListFragment : Fragment() {
             }
         }
         
-        // Opcional: Mostrar/ocultar indicador de carga
         viewLifecycleOwner.lifecycleScope.launch {
             adapter.loadStateFlow.collect { loadStates ->
                 binding.swipeRefreshLayout.isRefreshing = 
                     loadStates.refresh is androidx.paging.LoadState.Loading
                 
-                // Manejar estados de error si es necesario
                 val errorState = loadStates.refresh as? androidx.paging.LoadState.Error
                 errorState?.let {
-                    // Mostrar mensaje de error
+                    // You can show a toast or a snackbar with the error message here
                 }
             }
         }
@@ -86,7 +78,7 @@ class YourListFragment : Fragment() {
     
     private fun setupSwipeRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.refresh()
+            adapter.refresh()
         }
     }
     
