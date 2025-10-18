@@ -16,6 +16,7 @@ import com.medical.app.utils.Result
 import com.medical.app.data.local.AuthState
 import com.medical.app.data.local.SessionManager
 import com.medical.app.data.entities.enums.TipoUsuario
+import com.medical.app.data.repository.PacienteRepository
 import com.medical.app.databinding.FragmentLoginBinding
 import com.medical.app.ui.auth.viewmodel.LoginViewModel
 import com.medical.app.util.extensions.hideKeyboard
@@ -39,6 +40,9 @@ class LoginFragment : Fragment() {
 
     @Inject
     lateinit var sessionManager: SessionManager
+    
+    @Inject
+    lateinit var pacienteRepository: PacienteRepository
 
     private var hasNavigated = false // Flag para evitar múltiples navegaciones
 
@@ -64,19 +68,24 @@ class LoginFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             // Usar collect en lugar de collectLatest para no cancelar en cada emisión
             sessionManager.authState.collect { authState ->
+                Log.d(TAG, "AuthState cambió a: $authState")
                 when (authState) {
                     is AuthState.Authenticated -> {
-                        Log.d(TAG, "Usuario ya autenticado detectado")
+                        Log.d(TAG, "Usuario autenticado detectado: ${authState.user.email}, hasNavigated=$hasNavigated")
                         // Si ya está autenticado, navegar a la pantalla principal
                         if (!hasNavigated) {
+                            Log.d(TAG, "Iniciando navegación desde checkCurrentSession")
                             navigateToMain()
+                        } else {
+                            Log.d(TAG, "Navegación ya realizada, ignorando")
                         }
                     }
                     is AuthState.Error -> {
+                        Log.e(TAG, "Error en authState: ${authState.errorMessage}")
                         showMessage(authState.errorMessage)
                     }
                     else -> {
-                        Log.d(TAG, "AuthState: $authState")
+                        Log.d(TAG, "AuthState: $authState (no autenticado)")
                     }
                 }
             }
@@ -119,10 +128,17 @@ class LoginFragment : Fragment() {
                         showLoading(false)
                         showMessage("Inicio de sesión exitoso")
 
-                        // NO llamar a navigateToMain() aquí
-                        // El checkCurrentSession() se encargará de la navegación
-                        // cuando detecte que el authState cambió a Authenticated
-                        Log.d(TAG, "Login exitoso, esperando cambio en authState")
+                        // Llamar a navigateToMain() directamente como backup
+                        // El checkCurrentSession() también debería detectar el cambio
+                        Log.d(TAG, "Login exitoso, navegando directamente")
+                        // Dar un pequeño delay para asegurar que sessionManager actualice authState
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            kotlinx.coroutines.delay(100)
+                            if (!hasNavigated) {
+                                Log.d(TAG, "Ejecutando navegación post-login")
+                                navigateToMain()
+                            }
+                        }
                     }
                     is Result.Error -> {
                         showLoading(false)
@@ -177,23 +193,26 @@ class LoginFragment : Fragment() {
     }
 
     private fun navigateToMain() {
+        Log.d(TAG, "=== navigateToMain() INICIADO ===")
+        
         // Evitar navegaciones múltiples
         if (hasNavigated) {
-            Log.d(TAG, "Ya se navegó, ignorando llamada adicional")
+            Log.d(TAG, "Ya se navegó, ignorando llamada adicional (hasNavigated=$hasNavigated)")
             return
         }
 
         try {
             // Obtener el usuario actual y su tipo
             val currentUser = sessionManager.getCurrentUser()
+            Log.d(TAG, "Usuario obtenido: ${currentUser?.email}, tipo: ${currentUser?.tipoUsuario}")
+            
             if (currentUser == null) {
                 Log.e(TAG, "No hay usuario en sesión")
                 showMessage("Error: No se pudo obtener la información del usuario")
                 return
             }
 
-            Log.d(TAG, "Navegando según tipo de usuario: ${currentUser.tipoUsuario}")
-            hasNavigated = true
+            Log.d(TAG, "Navegando según tipo de usuario: ${currentUser.tipoUsuario} (ID: ${currentUser.id})")
 
             when (currentUser.tipoUsuario) {
                 TipoUsuario.MEDICO -> {
@@ -204,6 +223,7 @@ class LoginFragment : Fragment() {
                         return
                     }
                     
+                    hasNavigated = true
                     val action = LoginFragmentDirections.actionLoginFragmentToMedicoHomeFragment()
                     findNavController().navigate(
                         action,
@@ -218,7 +238,47 @@ class LoginFragment : Fragment() {
                     // Primero necesitamos obtener el ID del paciente desde la tabla de pacientes
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val patientId = currentUser.id.toLong() // Por ahora usar el ID del usuario
+                            Log.d(TAG, "Buscando paciente para usuario ID: ${currentUser.id}")
+                            
+                            // Obtener el paciente asociado al usuario
+                            var patient = pacienteRepository.getPacienteByUsuarioId(currentUser.id)
+                            
+                            // Si no existe el paciente, crearlo automáticamente
+                            if (patient == null) {
+                                Log.w(TAG, "No se encontró paciente para usuario ID: ${currentUser.id}, creando uno nuevo...")
+                                try {
+                                    val nombrePartes = currentUser.nombreCompleto.split(" ")
+                                    val newPaciente = com.medical.app.data.entities.Paciente(
+                                        usuarioId = currentUser.id,
+                                        nombre = nombrePartes.firstOrNull() ?: currentUser.nombreCompleto,
+                                        apellidos = nombrePartes.drop(1).joinToString(" ").ifEmpty { "Sin apellidos" },
+                                        fechaNacimiento = java.util.Date(), // Fecha por defecto
+                                        email = currentUser.email
+                                    )
+                                    val newPatientId = pacienteRepository.insert(newPaciente)
+                                    Log.d(TAG, "Paciente creado con ID: $newPatientId")
+                                    
+                                    // Volver a obtener el paciente creado
+                                    patient = pacienteRepository.getById(newPatientId.toInt())
+                                } catch (createError: Exception) {
+                                    Log.e(TAG, "Error al crear paciente automáticamente", createError)
+                                    showMessage("Error al crear el perfil del paciente: ${createError.message}")
+                                    hasNavigated = false
+                                    return@launch
+                                }
+                            }
+                            
+                            if (patient == null) {
+                                Log.e(TAG, "No se pudo obtener o crear el paciente")
+                                showMessage("Error: No se pudo cargar la información del paciente")
+                                hasNavigated = false
+                                return@launch
+                            }
+                            
+                            val patientId = patient.id.toLong()
+                            Log.d(TAG, "Navegando a PatientHome con paciente ID: $patientId")
+                            
+                            hasNavigated = true
                             val action = LoginFragmentDirections.actionLoginFragmentToPatientHomeFragment(patientId)
                             findNavController().navigate(
                                 action,
@@ -229,7 +289,7 @@ class LoginFragment : Fragment() {
                             )
                         } catch (e: Exception) {
                             Log.e(TAG, "Error navegando a PatientHome", e)
-                            showMessage("Error al cargar la vista del paciente")
+                            showMessage("Error al cargar la vista del paciente: ${e.message}")
                             hasNavigated = false
                         }
                     }

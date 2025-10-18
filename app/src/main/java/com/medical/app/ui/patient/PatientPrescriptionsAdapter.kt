@@ -43,10 +43,10 @@ class PatientPrescriptionsAdapter(
                 
                 // Duración
                 if (prescription.duration != null) {
-                    tvDuration.isVisible = true
+                    layoutDuration.isVisible = true
                     tvDuration.text = "Duración: ${prescription.duration} días"
                 } else {
-                    tvDuration.isVisible = false
+                    layoutDuration.isVisible = false
                 }
                 
                 // Indicaciones

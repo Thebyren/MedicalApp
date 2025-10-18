@@ -65,10 +65,15 @@ object DatabaseModule {
     // Repositorios
     @Provides
     @Singleton
-    fun provideAuthRepository(usuarioDao: UsuarioDao, passwordHasher: PasswordHasher): AuthRepository {
+    fun provideAuthRepository(
+        usuarioDao: UsuarioDao, 
+        pacienteDao: PacienteDao,
+        passwordHasher: PasswordHasher
+    ): AuthRepository {
         return AuthRepository(
             usuarioDao,
-            passwordHasher = passwordHasher
+            pacienteDao,
+            passwordHasher
         )
     }
 

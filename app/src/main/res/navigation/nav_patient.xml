@@ -72,32 +72,4 @@
             app:destination="@id/registroConsultaFragment" />
     </fragment>
 
-    <!-- Patient Home -->
-    <fragment
-        android:id="@+id/patientHomeFragment"
-        android:name="com.medical.app.ui.patient.PatientHomeFragment"
-        android:label="Inicio del Paciente"
-        tools:layout="@layout/fragment_patient_home">
-
-        <argument
-            android:name="patientId"
-            app:argType="long" />
-            
-        <action
-            android:id="@+id/action_patientHome_to_registroConsultaFragment"
-            app:destination="@id/registroConsultaFragment" />
-
-    </fragment>
-
-    <!-- Register Consulta -->
-    <fragment
-        android:id="@+id/registroConsultaFragment"
-        android:name="com.medical.app.ui.consulta.RegistroConsultaFragment"
-        android:label="Registrar Consulta"
-        tools:layout="@layout/fragment_registro_consulta">
-        <argument
-            android:name="patientId"
-            app:argType="string" />
-    </fragment>
-
 </navigation>

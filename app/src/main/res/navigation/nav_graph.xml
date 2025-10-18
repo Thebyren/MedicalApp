@@ -39,6 +39,13 @@
     </fragment>
 
     <!-- Pantalla de Inicio de Sesión -->
+    <!-- Global actions -->
+    <action
+        android:id="@+id/action_global_to_loginFragment"
+        app:destination="@id/loginFragment"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
+    
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.medical.app.ui.auth.LoginFragment"
@@ -63,7 +70,11 @@
             android:id="@+id/action_loginFragment_to_patientHomeFragment"
             app:destination="@id/patientHomeFragment"
             app:popUpTo="@id/loginFragment"
-            app:popUpToInclusive="true" />
+            app:popUpToInclusive="true">
+            <argument
+                android:name="patientId"
+                app:argType="long" />
+        </action>
     </fragment>
 
     <!-- Pantalla de Registro -->
@@ -97,6 +108,72 @@
             app:popUpToInclusive="true" />
     </fragment>
 
+    <!-- Patient Home Fragment -->
+    <fragment
+        android:id="@+id/patientHomeFragment"
+        android:name="com.medical.app.ui.patient.PatientHomeFragment"
+        android:label="Inicio del Paciente"
+        tools:layout="@layout/fragment_patient_home">
+
+        <argument
+            android:name="patientId"
+            app:argType="long" />
+            
+        <action
+            android:id="@+id/action_patientHome_to_registroConsultaFragment"
+            app:destination="@id/registroConsultaFragment" />
+            
+        <action
+            android:id="@+id/action_patientHome_to_patientPrescriptions"
+            app:destination="@id/patientPrescriptionsFragment" />
+            
+        <action
+            android:id="@+id/action_patientHome_to_patientProfile"
+            app:destination="@id/patientProfileFragment" />
+            
+        <action
+            android:id="@+id/action_patientHome_to_patientAppointments"
+            app:destination="@id/patientAppointmentsFragment" />
+
+    </fragment>
+    
+    <!-- Register Consulta -->
+    <fragment
+        android:id="@+id/registroConsultaFragment"
+        android:name="com.medical.app.ui.consulta.RegistroConsultaFragment"
+        android:label="Registrar Consulta"
+        tools:layout="@layout/fragment_registro_consulta">
+        <argument
+            android:name="patientId"
+            app:argType="string" />
+    </fragment>
+
+    <!-- Patient Prescriptions -->
+    <fragment
+        android:id="@+id/patientPrescriptionsFragment"
+        android:name="com.medical.app.ui.patient.PatientPrescriptionsFragment"
+        android:label="Mis Recetas"
+        tools:layout="@layout/fragment_patient_prescriptions" />
+        
+    <!-- Patient Profile -->
+    <fragment
+        android:id="@+id/patientProfileFragment"
+        android:name="com.medical.app.ui.patient.PatientProfileFragment"
+        android:label="Mi Perfil"
+        tools:layout="@layout/fragment_patient_profile">
+        
+        <argument
+            android:name="patientId"
+            app:argType="long" />
+    </fragment>
+    
+    <!-- Patient Appointments -->
+    <fragment
+        android:id="@+id/patientAppointmentsFragment"
+        android:name="com.medical.app.ui.patient.PatientAppointmentsFragment"
+        android:label="Mis Citas"
+        tools:layout="@layout/fragment_patient_appointments" />
+    
     <!-- Patient Management Navigation Graph -->
     <include app:graph="@navigation/nav_patient" />
 
