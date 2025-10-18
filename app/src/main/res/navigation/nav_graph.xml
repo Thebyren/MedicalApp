@@ -153,7 +153,12 @@
         android:id="@+id/patientPrescriptionsFragment"
         android:name="com.medical.app.ui.patient.PatientPrescriptionsFragment"
         android:label="Mis Recetas"
-        tools:layout="@layout/fragment_patient_prescriptions" />
+        tools:layout="@layout/fragment_patient_prescriptions">
+        
+        <argument
+            android:name="patientId"
+            app:argType="long" />
+    </fragment>
         
     <!-- Patient Profile -->
     <fragment

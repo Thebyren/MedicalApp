@@ -24,9 +24,10 @@ import com.medical.app.data.entities.*
         Consulta::class,
         Tratamiento::class,
         HistorialMedico::class,
-        Appointment::class
+        Appointment::class,
+        DailyIncome::class  // PASO 1: Descomentado
     ],
-    version = 4, // Incremented version for nullable consultaId in tratamientos
+    version = 5, // Added cost/isPaid to Appointment and DailyIncome entity
     exportSchema = true // Habilitado para mantener un historial de migraciones
 )
 @TypeConverters(Converters::class)
@@ -41,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tratamientoDao(): TratamientoDao
     abstract fun historialMedicoDao(): HistorialMedicoDao
     abstract fun appointmentDao(): AppointmentDao
+    abstract fun dailyIncomeDao(): DailyIncomeDao  // PASO 1: Descomentado
 
     companion object {
         // Nombre de la base de datos
@@ -115,6 +117,37 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * Migración de la versión 4 a la 5:
+         * - Agrega columnas cost e isPaid a appointments
+         * - Crea la tabla daily_income para tracking de ingresos
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Agregar columnas cost e isPaid a appointments
+                database.execSQL("ALTER TABLE appointments ADD COLUMN cost REAL NOT NULL DEFAULT 0.0")
+                database.execSQL("ALTER TABLE appointments ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0")
+                
+                // Crear tabla daily_income - PASO 1: Descomentado
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS daily_income (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        doctorId INTEGER NOT NULL,
+                        date INTEGER NOT NULL,
+                        totalIncome REAL NOT NULL DEFAULT 0.0,
+                        completedAppointments INTEGER NOT NULL DEFAULT 0,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+                
+                // Crear índice único para doctorId y date
+                database.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_daily_income_doctorId_date 
+                    ON daily_income(doctorId, date)
+                """)
+            }
+        }
+
+        /**
          * Obtiene la instancia de la base de datos.
          * Si no existe, la crea.
          * 
@@ -147,10 +180,11 @@ abstract class AppDatabase : RoomDatabase() {
                 // Aquí se agregan las migraciones en orden de versión
                 MIGRATION_1_2,
                 MIGRATION_2_3,
-                MIGRATION_3_4
+                MIGRATION_3_4,
+                MIGRATION_4_5
                 // Agregar más migraciones según sea necesario
             )
-            //.fallbackToDestructiveMigration() // Descomentar solo en desarrollo
+            .fallbackToDestructiveMigration() // TEMPORAL: Descomentar solo en desarrollo
             .build()
         }
 

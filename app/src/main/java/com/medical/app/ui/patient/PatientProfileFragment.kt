@@ -185,7 +185,15 @@ class PatientProfileFragment : Fragment() {
     }
     
     private fun saveProfile() {
-        val updatedPatient = viewModel.uiState.value.patient?.copy(
+        // Guardar referencia local para evitar problemas de smart cast
+        val currentPatient = viewModel.uiState.value.patient
+        
+        if (currentPatient == null) {
+            showMessage("Error: No se pudo cargar la información del paciente")
+            return
+        }
+        
+        val updatedPatient = currentPatient.copy(
             nombre = binding.etName.text.toString(),
             apellidos = binding.etLastName.text.toString(),
             email = binding.etEmail.text.toString(),
@@ -200,19 +208,17 @@ class PatientProfileFragment : Fragment() {
             fechaNacimiento = try {
                 dateFormat.parse(binding.etBirthDate.text.toString())
             } catch (e: Exception) {
-                viewModel.uiState.value.patient.fechaNacimiento
+                currentPatient.fechaNacimiento
             },
             genero = when (binding.etGender.text.toString()) {
                 "Masculino" -> Genero.MASCULINO
                 "Femenino" -> Genero.FEMENINO
                 "Otro" -> Genero.OTRO
-                else -> viewModel.uiState.value.patient.genero
+                else -> currentPatient.genero
             }
         )
         
-        updatedPatient?.let {
-            viewModel.updateProfile(it)
-        }
+        viewModel.updateProfile(updatedPatient)
     }
     
     private fun showLogoutConfirmation() {

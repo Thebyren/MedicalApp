@@ -147,6 +147,11 @@ class NewAppointmentFragment : Fragment() {
         binding.etDescription.addTextChangedListener { text ->
             viewModel.onEvent(NewAppointmentEvent.DescriptionChanged(text.toString()))
         }
+        
+        binding.etCost.addTextChangedListener { text ->
+            val cost = text.toString().toDoubleOrNull() ?: 0.0
+            viewModel.onEvent(NewAppointmentEvent.CostChanged(cost))
+        }
     }
     
     private fun showDatePicker() {

@@ -188,7 +188,7 @@
                             android:src="@drawable/ic_revenue" />
 
                         <TextView
-                            android:id="@+id/tvMonthlyEarnings"
+                            android:id="@+id/tvDailyEarnings"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
@@ -199,7 +199,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ingresos"
+                            android:text="Ingresos Hoy"
                             android:textAppearance="?attr/textAppearanceCaption" />
 
                     </LinearLayout>
@@ -484,9 +484,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@drawable/bg_bottom_nav"
+        android:background="@drawable/bg_bottom_nav_shadow"
+        android:paddingTop="4dp"
         app:itemIconTint="@drawable/bottom_nav_colors"
         app:itemTextColor="@drawable/bottom_nav_colors"
+        app:itemIconSize="24dp"
+        app:itemTextAppearanceActive="?attr/textAppearanceCaption"
+        app:itemTextAppearanceInactive="?attr/textAppearanceCaption"
+        app:labelVisibilityMode="labeled"
+        app:elevation="0dp"
         app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"
         app:menu="@menu/buttom_nav_menu" />
 

@@ -41,6 +41,8 @@ data class Appointment(
     val status: AppointmentStatus = AppointmentStatus.SCHEDULED,
     val type: String = "Consulta General",
     val notes: String? = null,
+    val cost: Double = 0.0, // Costo de la cita
+    val isPaid: Boolean = false, // Si ya fue pagada
     val createdAt: Date = Date(),
     val updatedAt: Date = Date()
 ) {

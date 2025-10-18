@@ -3,6 +3,7 @@ package com.medical.app.di
 import android.content.Context
 import com.medical.app.data.dao.AppointmentDao
 import com.medical.app.data.dao.ConsultaDao
+import com.medical.app.data.dao.DailyIncomeDao
 import com.medical.app.data.dao.HistorialMedicoDao
 import com.medical.app.data.dao.MedicoDao
 import com.medical.app.data.dao.MedicoPacienteDao
@@ -13,6 +14,7 @@ import com.medical.app.data.database.AppDatabase
 import com.medical.app.data.repository.AppointmentRepository
 import com.medical.app.data.repository.AuthRepository
 import com.medical.app.data.repository.ConsultaRepository
+import com.medical.app.data.repository.DailyIncomeRepository
 import com.medical.app.data.repository.MedicoRepository
 import com.medical.app.data.repository.PacienteRepository
 import com.medical.app.data.repository.TratamientoRepository
@@ -62,6 +64,9 @@ object DatabaseModule {
     @Provides
     fun provideAppointmentDao(database: AppDatabase): AppointmentDao = database.appointmentDao()
 
+    @Provides
+    fun provideDailyIncomeDao(database: AppDatabase): DailyIncomeDao = database.dailyIncomeDao()  // PASO 2: Descomentado
+
     // Repositorios
     @Provides
     @Singleton
@@ -103,7 +108,16 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAppointmentRepository(appointmentDao: AppointmentDao): AppointmentRepository {
-        return AppointmentRepository(appointmentDao)
+    fun provideDailyIncomeRepository(dailyIncomeDao: DailyIncomeDao): DailyIncomeRepository {
+        return DailyIncomeRepository(dailyIncomeDao)
+    }  // PASO 3: Descomentado
+
+    @Provides
+    @Singleton
+    fun provideAppointmentRepository(
+        appointmentDao: AppointmentDao,
+        dailyIncomeRepository: DailyIncomeRepository  // PASO 3: Descomentado
+    ): AppointmentRepository {
+        return AppointmentRepository(appointmentDao, dailyIncomeRepository)
     }
 }

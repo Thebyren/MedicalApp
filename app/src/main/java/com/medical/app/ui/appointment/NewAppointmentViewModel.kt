@@ -142,6 +142,9 @@ class NewAppointmentViewModel @Inject constructor(
             is NewAppointmentEvent.DescriptionChanged -> {
                 _uiState.update { it.copy(description = event.description) }
             }
+            is NewAppointmentEvent.CostChanged -> {
+                _uiState.update { it.copy(cost = event.cost) }
+            }
             NewAppointmentEvent.SaveAppointment -> {
                 saveAppointment()
             }
@@ -202,7 +205,9 @@ class NewAppointmentViewModel @Inject constructor(
                         dateTime = calendar.time,
                         duration = durationMinutes,
                         type = state.appointmentType,
-                        status = Appointment.AppointmentStatus.SCHEDULED
+                        status = Appointment.AppointmentStatus.SCHEDULED,
+                        cost = state.cost,
+                        isPaid = false
                     )
                     appointmentRepository.insertAppointment(appointment)
                 } else {
@@ -216,6 +221,7 @@ class NewAppointmentViewModel @Inject constructor(
                             dateTime = calendar.time,
                             duration = durationMinutes,
                             type = state.appointmentType,
+                            cost = state.cost,
                             updatedAt = Date()
                         )
                         appointmentRepository.updateAppointment(updatedAppointment)
@@ -258,6 +264,7 @@ data class NewAppointmentState(
     val time: String = "",
     val duration: String = "30 minutos",
     val description: String = "",
+    val cost: Double = 0.0,
     val appointmentTypes: List<String> = emptyList(),
     val durationOptions: List<String> = emptyList()
 )
@@ -270,5 +277,6 @@ sealed class NewAppointmentEvent {
     data class TimeSelected(val time: String) : NewAppointmentEvent()
     data class DurationSelected(val duration: String) : NewAppointmentEvent()
     data class DescriptionChanged(val description: String) : NewAppointmentEvent()
+    data class CostChanged(val cost: Double) : NewAppointmentEvent()
     object SaveAppointment : NewAppointmentEvent()
 }
