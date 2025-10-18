@@ -32,6 +32,7 @@ interface PacienteDao : BaseDao<Paciente> {
         WHERE nombre LIKE '%' || :query || '%'
         OR apellidos LIKE '%' || :query || '%'
         OR numeroSeguridadSocial LIKE '%' || :query || '%'
+        ORDER BY id DESC
     """)
     fun getPacientesPagingSource(query: String): PagingSource<Int, Paciente>
 

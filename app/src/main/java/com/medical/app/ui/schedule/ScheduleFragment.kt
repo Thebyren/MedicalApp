@@ -75,9 +75,11 @@ class ScheduleFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = AppointmentsAdapter(
-            onItemClick = { appointment ->
-                // TODO: Navegar a detalle de cita
-                showMessage("Ver cita: ${appointment.title}")
+            onItemClick = { appointmentWithPatient ->
+                // Navegar a editar cita
+                val action = ScheduleFragmentDirections
+                    .actionScheduleFragmentToNewAppointmentFragment(appointmentWithPatient.appointment.id)
+                findNavController().navigate(action)
             },
             onStatusChange = { appointment, newStatus ->
                 viewModel.updateAppointmentStatus(appointment, newStatus)
@@ -94,8 +96,8 @@ class ScheduleFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 binding.progressBar.isVisible = state.isLoading
-                binding.emptyLayout.isVisible = !state.isLoading && state.appointments.isEmpty()
-                binding.recyclerView.isVisible = !state.isLoading && state.appointments.isNotEmpty()
+                binding.emptyLayout.isVisible = !state.isLoading && state.appointmentsWithPatient.isEmpty()
+                binding.recyclerView.isVisible = !state.isLoading && state.appointmentsWithPatient.isNotEmpty()
                 
                 // Actualizar fecha seleccionada
                 state.selectedDate?.let { date ->
@@ -104,9 +106,9 @@ class ScheduleFragment : Fragment() {
                 }
                 
                 // Actualizar contador de citas
-                binding.tvAppointmentCount.text = "${state.appointments.size} citas"
+                binding.tvAppointmentCount.text = "${state.appointmentsWithPatient.size} citas"
                 
-                adapter.submitList(state.appointments)
+                adapter.submitList(state.appointmentsWithPatient)
                 
                 state.error?.let { error ->
                     showMessage(error)
@@ -124,8 +126,9 @@ class ScheduleFragment : Fragment() {
 
     private fun setupFab() {
         binding.fabAdd.setOnClickListener {
-            // TODO: Navegar a crear cita
-            showMessage("Crear nueva cita")
+            findNavController().navigate(
+                ScheduleFragmentDirections.actionScheduleFragmentToNewAppointmentFragment()
+            )
         }
     }
 

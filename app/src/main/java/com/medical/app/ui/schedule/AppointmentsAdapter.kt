@@ -7,15 +7,16 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.medical.app.R
+import com.medical.app.data.dao.AppointmentWithPatient
 import com.medical.app.data.entities.Appointment
 import com.medical.app.databinding.ItemAppointmentBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
 class AppointmentsAdapter(
-    private val onItemClick: (Appointment) -> Unit,
+    private val onItemClick: (AppointmentWithPatient) -> Unit,
     private val onStatusChange: (Appointment, Appointment.AppointmentStatus) -> Unit
-) : ListAdapter<Appointment, AppointmentsAdapter.AppointmentViewHolder>(AppointmentDiffCallback()) {
+) : ListAdapter<AppointmentWithPatient, AppointmentsAdapter.AppointmentViewHolder>(AppointmentDiffCallback()) {
 
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
@@ -36,10 +37,12 @@ class AppointmentsAdapter(
         private val binding: ItemAppointmentBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(appointment: Appointment) {
+        fun bind(appointmentWithPatient: AppointmentWithPatient) {
+            val appointment = appointmentWithPatient.appointment
             binding.apply {
                 tvTime.text = timeFormat.format(appointment.dateTime)
-                tvTitle.text = appointment.title
+                // Mostrar título con nombre del paciente
+                tvTitle.text = "${appointment.title} - ${appointmentWithPatient.fullPatientName}"
                 tvType.text = appointment.type
                 tvDuration.text = "${appointment.duration} min"
                 
@@ -76,7 +79,7 @@ class AppointmentsAdapter(
                 )
 
                 root.setOnClickListener {
-                    onItemClick(appointment)
+                    onItemClick(appointmentWithPatient)
                 }
 
                 // Botones de acción rápida
@@ -91,12 +94,12 @@ class AppointmentsAdapter(
         }
     }
 
-    private class AppointmentDiffCallback : DiffUtil.ItemCallback<Appointment>() {
-        override fun areItemsTheSame(oldItem: Appointment, newItem: Appointment): Boolean {
-            return oldItem.id == newItem.id
+    private class AppointmentDiffCallback : DiffUtil.ItemCallback<AppointmentWithPatient>() {
+        override fun areItemsTheSame(oldItem: AppointmentWithPatient, newItem: AppointmentWithPatient): Boolean {
+            return oldItem.appointment.id == newItem.appointment.id
         }
 
-        override fun areContentsTheSame(oldItem: Appointment, newItem: Appointment): Boolean {
+        override fun areContentsTheSame(oldItem: AppointmentWithPatient, newItem: AppointmentWithPatient): Boolean {
             return oldItem == newItem
         }
     }

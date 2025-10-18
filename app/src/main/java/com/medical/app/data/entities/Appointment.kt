@@ -2,6 +2,7 @@ package com.medical.app.data.entities
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.medical.app.data.entities.Medico
 import com.medical.app.data.entities.Paciente
@@ -22,6 +23,10 @@ import java.util.*
             childColumns = ["doctorId"],
             onDelete = ForeignKey.SET_NULL
         )
+    ],
+    indices = [
+        Index(value = ["patientId"]),
+        Index(value = ["doctorId"])
     ]
 )
 data class Appointment(

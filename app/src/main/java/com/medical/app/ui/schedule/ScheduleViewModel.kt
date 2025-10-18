@@ -2,6 +2,7 @@ package com.medical.app.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medical.app.data.dao.AppointmentWithPatient
 import com.medical.app.data.entities.Appointment
 import com.medical.app.data.local.SessionManager
 import com.medical.app.data.repository.AppointmentRepository
@@ -79,16 +80,17 @@ class ScheduleViewModel @Inject constructor(
                 calendar.set(Calendar.SECOND, 59)
                 val endOfDay = calendar.time
 
-                // Obtener citas del día
-                val appointments = appointmentRepository
-                    .getAppointmentsForDateRange(startOfDay, endOfDay)
+                // Obtener citas del día con información del paciente
+                val appointmentsWithPatient = appointmentRepository
+                    .getAppointmentsWithPatientForDateRange(startOfDay, endOfDay)
                     .first()
-                    .filter { it.doctorId == currentUser.id.toLong() }
-                    .sortedBy { it.dateTime }
+                    // Mostrar citas sin doctor asignado o del doctor actual
+                    .filter { it.appointment.doctorId == null || it.appointment.doctorId == currentUser.id.toLong() }
+                    .sortedBy { it.appointment.dateTime }
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    appointments = appointments
+                    appointmentsWithPatient = appointmentsWithPatient
                 )
                 
             } catch (e: Exception) {
@@ -128,6 +130,6 @@ class ScheduleViewModel @Inject constructor(
 data class ScheduleUiState(
     val isLoading: Boolean = false,
     val selectedDate: Date? = null,
-    val appointments: List<Appointment> = emptyList(),
+    val appointmentsWithPatient: List<AppointmentWithPatient> = emptyList(),
     val error: String? = null
 )

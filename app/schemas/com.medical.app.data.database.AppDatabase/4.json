@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "37c11744f6f24c2b4f1ee541bda0db85",
+    "version": 4,
+    "identityHash": "8b40fef15a597ee947816284744cb415",
     "entities": [
       {
         "tableName": "usuarios",
@@ -474,7 +474,7 @@
       },
       {
         "tableName": "tratamientos",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `consultaId` INTEGER NOT NULL, `medicamento` TEXT NOT NULL, `dosis` TEXT NOT NULL, `frecuencia` TEXT NOT NULL, `duracionDias` INTEGER, `indicaciones` TEXT, FOREIGN KEY(`consultaId`) REFERENCES `consultas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `consultaId` INTEGER, `medicamento` TEXT NOT NULL, `dosis` TEXT NOT NULL, `frecuencia` TEXT NOT NULL, `duracionDias` INTEGER, `indicaciones` TEXT, FOREIGN KEY(`consultaId`) REFERENCES `consultas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -485,8 +485,7 @@
           {
             "fieldPath": "consultaId",
             "columnName": "consultaId",
-            "affinity": "INTEGER",
-            "notNull": true
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "medicamento",
@@ -748,7 +747,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '37c11744f6f24c2b4f1ee541bda0db85')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8b40fef15a597ee947816284744cb415')"
     ]
   }
 }

@@ -34,4 +34,10 @@ interface TratamientoDao : BaseDao<Tratamiento> {
         fechaInicio: Long,
         fechaFin: Long
     ): Flow<List<Tratamiento>>
+    
+    @Query("SELECT * FROM tratamientos ORDER BY id DESC")
+    fun getAllTratamientos(): Flow<List<Tratamiento>>
+    
+    @Query("SELECT * FROM tratamientos WHERE consultaId IS NULL ORDER BY id DESC")
+    fun getIndependentPrescriptions(): Flow<List<Tratamiento>>
 }

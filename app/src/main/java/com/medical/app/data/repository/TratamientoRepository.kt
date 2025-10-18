@@ -34,4 +34,12 @@ class TratamientoRepository @Inject constructor(
     suspend fun delete(tratamiento: Tratamiento) {
         tratamientoDao.delete(tratamiento)
     }
+    
+    fun getAllTratamientos(): Flow<List<Tratamiento>> {
+        return tratamientoDao.getAllTratamientos()
+    }
+    
+    fun getIndependentPrescriptions(): Flow<List<Tratamiento>> {
+        return tratamientoDao.getIndependentPrescriptions()
+    }
 }

@@ -26,7 +26,7 @@ import com.medical.app.data.entities.*
         HistorialMedico::class,
         Appointment::class
     ],
-    version = 2, // Incremented version for the new salt column
+    version = 4, // Incremented version for nullable consultaId in tratamientos
     exportSchema = true // Habilitado para mantener un historial de migraciones
 )
 @TypeConverters(Converters::class)
@@ -64,6 +64,57 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * Migración de la versión 2 a la 3:
+         * - Agrega índices a las columnas patientId y doctorId en la tabla appointments
+         *   para mejorar el rendimiento de las consultas con claves foráneas
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_patientId ON appointments(patientId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_doctorId ON appointments(doctorId)")
+            }
+        }
+        
+        /**
+         * Migración de la versión 3 a la 4:
+         * - Hace que consultaId sea nullable en la tabla tratamientos
+         *   para permitir prescripciones independientes sin consulta asociada
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Crear tabla temporal con la nueva estructura
+                database.execSQL("""
+                    CREATE TABLE tratamientos_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        consultaId INTEGER,
+                        medicamento TEXT NOT NULL,
+                        dosis TEXT NOT NULL,
+                        frecuencia TEXT NOT NULL,
+                        duracionDias INTEGER,
+                        indicaciones TEXT,
+                        FOREIGN KEY(consultaId) REFERENCES consultas(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                // Copiar datos de la tabla antigua a la nueva
+                database.execSQL("""
+                    INSERT INTO tratamientos_new (id, consultaId, medicamento, dosis, frecuencia, duracionDias, indicaciones)
+                    SELECT id, consultaId, medicamento, dosis, frecuencia, duracionDias, indicaciones
+                    FROM tratamientos
+                """)
+                
+                // Eliminar tabla antigua
+                database.execSQL("DROP TABLE tratamientos")
+                
+                // Renombrar tabla nueva
+                database.execSQL("ALTER TABLE tratamientos_new RENAME TO tratamientos")
+                
+                // Recrear índice
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tratamientos_consultaId ON tratamientos(consultaId)")
+            }
+        }
+
+        /**
          * Obtiene la instancia de la base de datos.
          * Si no existe, la crea.
          * 
@@ -94,7 +145,9 @@ abstract class AppDatabase : RoomDatabase() {
             })
             .addMigrations(
                 // Aquí se agregan las migraciones en orden de versión
-                MIGRATION_1_2
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+                MIGRATION_3_4
                 // Agregar más migraciones según sea necesario
             )
             //.fallbackToDestructiveMigration() // Descomentar solo en desarrollo

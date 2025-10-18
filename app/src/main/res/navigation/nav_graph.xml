@@ -58,6 +58,12 @@
             app:destination="@id/medicoHomeFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+        
+        <action
+            android:id="@+id/action_loginFragment_to_patientHomeFragment"
+            app:destination="@id/patientHomeFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <!-- Pantalla de Registro -->
@@ -98,12 +104,21 @@
     <fragment
         android:id="@+id/newAppointmentFragment"
         android:name="com.medical.app.ui.appointment.NewAppointmentFragment"
-        android:label="Nueva Cita" />
+        android:label="Nueva Cita">
+        <argument
+            android:name="appointmentId"
+            android:defaultValue="-1L"
+            app:argType="long" />
+    </fragment>
 
     <fragment
         android:id="@+id/scheduleFragment"
         android:name="com.medical.app.ui.schedule.ScheduleFragment"
-        android:label="Agenda" />
+        android:label="Agenda">
+        <action
+            android:id="@+id/action_scheduleFragment_to_newAppointmentFragment"
+            app:destination="@id/newAppointmentFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/prescriptionsFragment"
@@ -131,6 +146,12 @@
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.medical.app.ui.settings.SettingsFragment"
-        android:label="Configuración" />
+        android:label="Configuración">
+        <action
+            android:id="@+id/action_settingsFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
 
 </navigation>

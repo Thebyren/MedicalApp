@@ -48,10 +48,43 @@ class PatientHomeFragment : Fragment() {
         
         setupRecyclerView()
         setupClickListeners()
+        setupBottomNavigation()
         setupObservers()
         
         // Cargar datos del paciente
         viewModel.loadPatientData(args.patientId)
+    }
+    
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_home -> {
+                    // Ya estamos en home
+                    true
+                }
+                R.id.navigation_appointments -> {
+                    // Navegar a citas
+                    // TODO: Crear vista de citas del paciente
+                    showMessage("Próximamente: Mis Citas")
+                    false
+                }
+                R.id.navigation_prescriptions -> {
+                    // Navegar a recetas
+                    findNavController().navigate(
+                        PatientHomeFragmentDirections.actionPatientHomeToPatientPrescriptions()
+                    )
+                    true
+                }
+                R.id.navigation_profile -> {
+                    // Navegar a perfil
+                    findNavController().navigate(
+                        PatientHomeFragmentDirections.actionPatientHomeToPatientProfile()
+                    )
+                    true
+                }
+                else -> false
+            }
+        }
     }
     
     private fun setupRecyclerView() {
@@ -68,27 +101,50 @@ class PatientHomeFragment : Fragment() {
     }
     
     private fun setupClickListeners() {
-        val action = PatientHomeFragmentDirections.actionPatientHomeToRegistroConsultaFragment(args.patientId.toString())
-
-        // Botón de nueva cita
-        binding.fabNewAppointment.setOnClickListener {
-            findNavController().navigate(action)
+        // Click en la card de bienvenida/perfil
+        binding.cardWelcome.setOnClickListener {
+            findNavController().navigate(
+                PatientHomeFragmentDirections.actionPatientHomeToPatientProfile()
+            )
         }
         
-        // Botón de nueva cita (cuando no hay citas)
-        binding.cardNoAppointments.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnNewAppointment)
-            .setOnClickListener {
-                findNavController().navigate(action)
-            }
-            
+        // Click en la card de recetas
+        binding.cardPrescriptions.setOnClickListener {
+            findNavController().navigate(
+                PatientHomeFragmentDirections.actionPatientHomeToPatientPrescriptions()
+            )
+        }
+        
+        // Click en la card de citas
+        binding.cardAppointments.setOnClickListener {
+            // TODO: Navegar a vista de citas
+            showMessage("Próximamente: Mis Citas")
+        }
+        
         // Botón de ver detalles de la próxima cita
-        binding.cardNextAppointment.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewAppointment)
-            .setOnClickListener {
-                viewModel.uiState.value.nextAppointment?.let { appointment ->
-                    // Como el fragmento no existe, esta navegación se queda comentada.
-                    // findNavController().navigate(PatientHomeFragmentDirections.actionToAppointmentDetail(appointment.id))
-                }
+        binding.btnViewAppointment?.setOnClickListener {
+            viewModel.uiState.value.nextAppointment?.let { appointment ->
+                showMessage("Detalles de cita próximamente")
             }
+        }
+        
+        // Configuración del toolbar
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_notifications -> {
+                    showMessage("Notificaciones próximamente")
+                    true
+                }
+                R.id.action_settings -> {
+                    // Navegar a configuración del paciente
+                    findNavController().navigate(
+                        PatientHomeFragmentDirections.actionPatientHomeToPatientSettings()
+                    )
+                    true
+                }
+                else -> false
+            }
+        }
     }
     
     private fun setupObservers() {

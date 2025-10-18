@@ -13,8 +13,9 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.utils.Result
-import com.medical.app.data.local.SessionManager
 import com.medical.app.data.local.AuthState
+import com.medical.app.data.local.SessionManager
+import com.medical.app.data.entities.enums.TipoUsuario
 import com.medical.app.databinding.FragmentLoginBinding
 import com.medical.app.ui.auth.viewmodel.LoginViewModel
 import com.medical.app.util.extensions.hideKeyboard
@@ -183,24 +184,57 @@ class LoginFragment : Fragment() {
         }
 
         try {
-            // Verificar si ya estamos en el destino
-            val currentDestination = findNavController().currentDestination?.id
-            if (currentDestination == R.id.medicoHomeFragment) {
-                Log.d(TAG, "Ya estamos en medicoHomeFragment")
+            // Obtener el usuario actual y su tipo
+            val currentUser = sessionManager.getCurrentUser()
+            if (currentUser == null) {
+                Log.e(TAG, "No hay usuario en sesión")
+                showMessage("Error: No se pudo obtener la información del usuario")
                 return
             }
 
-            Log.d(TAG, "Navegando a medicoHomeFragment")
+            Log.d(TAG, "Navegando según tipo de usuario: ${currentUser.tipoUsuario}")
             hasNavigated = true
 
-            val action = LoginFragmentDirections.actionLoginFragmentToMedicoHomeFragment()
-            findNavController().navigate(
-                action,
-                NavOptions.Builder()
-                    .setPopUpTo(R.id.loginFragment, true)
-                    .setLaunchSingleTop(true)
-                    .build()
-            )
+            when (currentUser.tipoUsuario) {
+                TipoUsuario.MEDICO -> {
+                    // Verificar si ya estamos en el destino
+                    val currentDestination = findNavController().currentDestination?.id
+                    if (currentDestination == R.id.medicoHomeFragment) {
+                        Log.d(TAG, "Ya estamos en medicoHomeFragment")
+                        return
+                    }
+                    
+                    val action = LoginFragmentDirections.actionLoginFragmentToMedicoHomeFragment()
+                    findNavController().navigate(
+                        action,
+                        NavOptions.Builder()
+                            .setPopUpTo(R.id.loginFragment, true)
+                            .setLaunchSingleTop(true)
+                            .build()
+                    )
+                }
+                TipoUsuario.PACIENTE -> {
+                    // Navegar a la vista del paciente
+                    // Primero necesitamos obtener el ID del paciente desde la tabla de pacientes
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            val patientId = currentUser.id.toLong() // Por ahora usar el ID del usuario
+                            val action = LoginFragmentDirections.actionLoginFragmentToPatientHomeFragment(patientId)
+                            findNavController().navigate(
+                                action,
+                                NavOptions.Builder()
+                                    .setPopUpTo(R.id.loginFragment, true)
+                                    .setLaunchSingleTop(true)
+                                    .build()
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error navegando a PatientHome", e)
+                            showMessage("Error al cargar la vista del paciente")
+                            hasNavigated = false
+                        }
+                    }
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error en navegación", e)
             hasNavigated = false // Resetear el flag si falla
