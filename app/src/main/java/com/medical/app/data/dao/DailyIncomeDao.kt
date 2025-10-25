@@ -13,6 +13,9 @@ interface DailyIncomeDao {
     
     @Update
     suspend fun update(dailyIncome: DailyIncome)
+
+    @Query("SELECT * FROM daily_income")
+    suspend fun getAllDailyIncomes(): List<DailyIncome>
     
     @Query("SELECT * FROM daily_income WHERE doctorId = :doctorId AND date = :date LIMIT 1")
     suspend fun getByDoctorAndDate(doctorId: Long, date: Date): DailyIncome?

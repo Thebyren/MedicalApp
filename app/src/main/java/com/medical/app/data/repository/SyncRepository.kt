@@ -30,18 +30,20 @@ class SyncRepository @Inject constructor(
     private val historialMedicoDao: HistorialMedicoDao,
     private val dailyIncomeDao: DailyIncomeDao
 ) {
-    
+
     companion object {
         private const val TAG = "SyncRepository"
+        private const val SYNC_TIMEOUT_MS = 30000L // 30 segundos de timeout general
+        private const val REQUEST_TIMEOUT_MS = 15000L // 15 segundos por petición
     }
-    
+
     /**
      * Sincroniza todos los datos entre Room y Supabase
      */
     suspend fun syncAll(): SyncResult = withContext(Dispatchers.IO) {
         Log.d(TAG, "=== INICIANDO SINCRONIZACIÓN ===")
         val results = mutableListOf<EntitySyncResult>()
-        
+
         try {
             // Verificar conexión con Supabase
             Log.d(TAG, "Verificando conexión con Supabase...")
@@ -54,29 +56,55 @@ class SyncRepository @Inject constructor(
                 )
             }
             Log.d(TAG, "Conexión con Supabase establecida")
-            
-            // Sincronizar cada tipo de entidad
-            // IMPORTANTE: Sincronizar usuarios y médicos PRIMERO para evitar problemas de FK
-            results.add(syncUsuarios())
-            results.add(syncMedicos())
-            results.add(syncPacientes())
-            results.add(syncAppointments())
-            results.add(syncConsultas())
-            results.add(syncTratamientos())
-            results.add(syncHistorialMedico())
-            results.add(syncDailyIncome())
-            
+
+            // Sincronizar cada tipo de entidad con timeout
+            withTimeout(SYNC_TIMEOUT_MS) {
+                // Sincronizar entidades independientes en paralelo
+                val independentSyncs = listOf(
+                    async { syncUsuarios() },
+                    async { syncMedicos() },
+                    async { syncPacientes() },
+                    async { syncAppointments() }
+                )
+
+                // Sincronizar entidades dependientes después de las independientes
+                val dependentSyncs = listOf(
+                    async { syncConsultas() },
+                    async { syncTratamientos() },
+                    async { syncHistorialMedico() },
+                    async { syncDailyIncome() }
+                )
+
+                // Esperar a que terminen las independientes
+                independentSyncs.awaitAll().forEach { result ->
+                    results.add(result)
+                }
+
+                // Esperar a que terminen las dependientes
+                dependentSyncs.awaitAll().forEach { result ->
+                    results.add(result)
+                }
+            }
+
             // Limpiar registros eliminados que ya fueron sincronizados
             syncMetadataDao.cleanupDeletedSynced()
-            
+
             val hasErrors = results.any { !it.success }
-            
+
             return@withContext SyncResult(
                 success = !hasErrors,
                 error = if (hasErrors) "Algunos elementos no pudieron sincronizarse" else null,
                 entityResults = results
             )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout en la sincronización general", e)
+            return@withContext SyncResult(
+                success = false,
+                error = "Timeout: La sincronización tardó demasiado tiempo.",
+                entityResults = results
+            )
         } catch (e: Exception) {
+            Log.e(TAG, "Error general de sincronización: ${e.message}", e)
             return@withContext SyncResult(
                 success = false,
                 error = "Error general de sincronización: ${e.message}",
@@ -84,7 +112,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza usuarios
      */
@@ -92,28 +120,30 @@ class SyncRepository @Inject constructor(
         Log.d(TAG, "Sincronizando USUARIOS...")
         try {
             val entityType = EntityType.USUARIOS.value
-            
+
             // Descargar usuarios desde Supabase (solo descarga, no subir por seguridad)
             Log.d(TAG, "Descargando usuarios desde Supabase...")
-            
-            val remoteUsuarios = supabaseClient.client
-                .from("usuarios")
-                .select(Columns.ALL)
-                .decodeList<UsuarioDto>()
-            
+
+            val remoteUsuarios = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("usuarios")
+                    .select(Columns.ALL)
+                    .decodeList<UsuarioDto>()
+            }
+
             Log.d(TAG, "Descargados ${remoteUsuarios.size} usuarios desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteUsuarios.forEach { dto ->
                 try {
                     Log.d(TAG, "Procesando usuario remoto ID: ${dto.id}, email: ${dto.email}")
                     val localEntity = dto.toEntity()
-                    
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         // Verificar si ya existe un usuario con ese ID
                         val existingUsuario = usuarioDao.getUsuarioById(dto.id?.toInt() ?: 0)
@@ -122,7 +152,7 @@ class SyncRepository @Inject constructor(
                             Log.d(TAG, "Insertando nuevo usuario desde Supabase...")
                             val localId = usuarioDao.insert(localEntity)
                             Log.d(TAG, "Usuario insertado con ID local: $localId")
-                            
+
                             syncMetadataDao.insert(
                                 SyncMetadata(
                                     entityType = entityType,
@@ -143,13 +173,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = downloadErrors == 0,
                 uploaded = 0, // No subimos usuarios por seguridad
                 downloaded = downloaded,
                 errors = downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar usuarios", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.USUARIOS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de usuarios: ${e.message}", e)
@@ -163,7 +203,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza médicos
      */
@@ -171,28 +211,30 @@ class SyncRepository @Inject constructor(
         Log.d(TAG, "Sincronizando MÉDICOS...")
         try {
             val entityType = EntityType.MEDICOS.value
-            
+
             // Descargar médicos desde Supabase
             Log.d(TAG, "Descargando médicos desde Supabase...")
-            
-            val remoteMedicos = supabaseClient.client
-                .from("medicos")
-                .select(Columns.ALL)
-                .decodeList<MedicoDto>()
-            
+
+            val remoteMedicos = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("medicos")
+                    .select(Columns.ALL)
+                    .decodeList<MedicoDto>()
+            }
+
             Log.d(TAG, "Descargados ${remoteMedicos.size} médicos desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteMedicos.forEach { dto ->
                 try {
                     Log.d(TAG, "Procesando médico remoto ID: ${dto.id}")
                     val localEntity = dto.toEntity()
-                    
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         // Verificar si ya existe un médico con ese ID
                         val existingMedico = medicoDao.getMedicoById(dto.id?.toInt() ?: 0)
@@ -201,7 +243,7 @@ class SyncRepository @Inject constructor(
                             Log.d(TAG, "Insertando nuevo médico desde Supabase...")
                             val localId = medicoDao.insert(localEntity)
                             Log.d(TAG, "Médico insertado con ID local: $localId")
-                            
+
                             syncMetadataDao.insert(
                                 SyncMetadata(
                                     entityType = entityType,
@@ -222,13 +264,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = downloadErrors == 0,
                 uploaded = 0,
                 downloaded = downloaded,
                 errors = downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar médicos", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.MEDICOS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de médicos: ${e.message}", e)
@@ -242,7 +294,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza pacientes
      */
@@ -250,63 +302,65 @@ class SyncRepository @Inject constructor(
         Log.d(TAG, "Sincronizando PACIENTES...")
         try {
             val entityType = EntityType.PACIENTES.value
-            
+
             // 1. Subir cambios locales
             Log.d(TAG, "Buscando cambios locales de pacientes...")
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             Log.d(TAG, "Encontrados ${localChanges.size} pacientes para sincronizar")
             var uploaded = 0
             var uploadErrors = 0
-            
+
             localChanges.forEach { metadata ->
                 Log.d(TAG, "Procesando paciente local ID: ${metadata.localId}")
                 try {
-                    if (metadata.isDeleted) {
-                        // Eliminar en Supabase
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("pacientes")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        // Obtener entidad local y subir/actualizar
-                        val paciente = pacienteDao.getPacienteById(metadata.localId.toInt())
-                        if (paciente != null) {
-                            val dto = paciente.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
+                            // Eliminar en Supabase
                             if (metadata.remoteId != null) {
-                                // Actualizar en Supabase
                                 supabaseClient.client
                                     .from("pacientes")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                // Insertar en Supabase
-                                Log.d(TAG, "Insertando nuevo paciente en Supabase: ${dto.nombre} ${dto.apellidos}")
-                                val result = supabaseClient.client
-                                    .from("pacientes")
-                                    .insert(dto)
-                                    .decodeSingle<PacienteDto>()
-                                
-                                Log.d(TAG, "Paciente insertado exitosamente con ID remoto: ${result.id}")
-                                // Actualizar remoteId en metadata
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
+                        } else {
+                            // Obtener entidad local y subir/actualizar
+                            val paciente = pacienteDao.getPacienteById(metadata.localId.toInt())
+                            if (paciente != null) {
+                                val dto = paciente.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    // Actualizar en Supabase
+                                    supabaseClient.client
+                                        .from("pacientes")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    // Insertar en Supabase
+                                    Log.d(TAG, "Insertando nuevo paciente en Supabase: ${dto.nombre} ${dto.apellidos}")
+                                    val result = supabaseClient.client
+                                        .from("pacientes")
+                                        .insert(dto)
+                                        .decodeSingle<PacienteDto>()
+
+                                    Log.d(TAG, "Paciente insertado exitosamente con ID remoto: ${result.id}")
+                                    // Actualizar remoteId en metadata
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -319,36 +373,36 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // 2. Descargar cambios desde Supabase
             Log.d(TAG, "Descargando pacientes desde Supabase...")
-            val lastSyncTime = syncMetadataDao.getLastSyncTime(entityType) ?: 0
-            
-            val remotePacientes = supabaseClient.client
-                .from("pacientes")
-                .select(Columns.ALL)
-                .decodeList<PacienteDto>()
-            
+            val remotePacientes = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("pacientes")
+                    .select(Columns.ALL)
+                    .decodeList<PacienteDto>()
+            }
+
             Log.d(TAG, "Descargados ${remotePacientes.size} pacientes desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remotePacientes.forEach { dto ->
                 try {
                     Log.d(TAG, "Procesando paciente remoto ID: ${dto.id}, nombre: ${dto.nombre} ${dto.apellidos}")
                     val localEntity = dto.toEntity()
                     Log.d(TAG, "Paciente convertido a entidad local")
-                    
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         // Nueva entidad desde Supabase
                         Log.d(TAG, "Insertando nuevo paciente desde Supabase...")
                         val localId = pacienteDao.insert(localEntity)
                         Log.d(TAG, "Paciente insertado con ID local: $localId")
-                        
+
                         syncMetadataDao.insert(
                             SyncMetadata(
                                 entityType = entityType,
@@ -380,13 +434,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar pacientes", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.PACIENTES.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             return@coroutineScope EntitySyncResult(
@@ -399,60 +463,62 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza appointments (citas)
      */
     private suspend fun syncAppointments(): EntitySyncResult = coroutineScope {
         try {
             val entityType = EntityType.APPOINTMENTS.value
-            
+
             // Similar a syncPacientes pero con appointments
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             var uploaded = 0
             var uploadErrors = 0
-            
+
             localChanges.forEach { metadata ->
                 try {
-                    if (metadata.isDeleted) {
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("appointments")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        val appointment = appointmentDao.getAppointmentById(metadata.localId)
-                        if (appointment != null) {
-                            val dto = appointment.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
                             if (metadata.remoteId != null) {
                                 supabaseClient.client
                                     .from("appointments")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                val result = supabaseClient.client
-                                    .from("appointments")
-                                    .insert(dto)
-                                    .decodeSingle<AppointmentDto>()
-                                
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
+                        } else {
+                            val appointment = appointmentDao.getAppointmentById(metadata.localId)
+                            if (appointment != null) {
+                                val dto = appointment.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    supabaseClient.client
+                                        .from("appointments")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    val result = supabaseClient.client
+                                        .from("appointments")
+                                        .insert(dto)
+                                        .decodeSingle<AppointmentDto>()
+
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -464,23 +530,25 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // Descargar cambios desde Supabase
-            val remoteAppointments = supabaseClient.client
-                .from("appointments")
-                .select(Columns.ALL)
-                .decodeList<AppointmentDto>()
-            
+            val remoteAppointments = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("appointments")
+                    .select(Columns.ALL)
+                    .decodeList<AppointmentDto>()
+            }
+
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteAppointments.forEach { dto ->
                 try {
                     val localEntity = dto.toEntity()
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         val localId = appointmentDao.insert(localEntity)
                         syncMetadataDao.insert(
@@ -506,13 +574,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar appointments", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.APPOINTMENTS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             return@coroutineScope EntitySyncResult(
@@ -525,7 +603,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza consultas
      * Implementación similar a syncPacientes y syncAppointments
@@ -536,52 +614,54 @@ class SyncRepository @Inject constructor(
             val entityType = EntityType.CONSULTAS.value
             var uploaded = 0
             var uploadErrors = 0
-            
+
             // 1. Subir cambios locales
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             Log.d(TAG, "Encontrados ${localChanges.size} consultas para sincronizar")
-            
+
             localChanges.forEach { metadata ->
                 try {
-                    if (metadata.isDeleted) {
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("consultas")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        val consulta = consultaDao.getConsultaById(metadata.localId)
-                        if (consulta != null) {
-                            val dto = consulta.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
                             if (metadata.remoteId != null) {
                                 supabaseClient.client
                                     .from("consultas")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                val result = supabaseClient.client
-                                    .from("consultas")
-                                    .insert(dto)
-                                    .decodeSingle<ConsultaDto>()
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
-                            Log.d(TAG, "✅ Consulta subida exitosamente")
+                        } else {
+                            val consulta = consultaDao.getConsultaById(metadata.localId)
+                            if (consulta != null) {
+                                val dto = consulta.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    supabaseClient.client
+                                        .from("consultas")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    val result = supabaseClient.client
+                                        .from("consultas")
+                                        .insert(dto)
+                                        .decodeSingle<ConsultaDto>()
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                                Log.d(TAG, "✅ Consulta subida exitosamente")
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -594,25 +674,27 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // 2. Descargar cambios desde Supabase
             Log.d(TAG, "Descargando consultas desde Supabase...")
-            val remoteConsultas = supabaseClient.client
-                .from("consultas")
-                .select(Columns.ALL)
-                .decodeList<ConsultaDto>()
-            
+            val remoteConsultas = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("consultas")
+                    .select(Columns.ALL)
+                    .decodeList<ConsultaDto>()
+            }
+
             Log.d(TAG, "Descargadas ${remoteConsultas.size} consultas desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteConsultas.forEach { dto ->
                 try {
                     val localEntity = dto.toEntity()
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         val localId = consultaDao.insert(localEntity)
                         syncMetadataDao.insert(
@@ -632,13 +714,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar consultas", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.CONSULTAS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de consultas: ${e.message}", e)
@@ -652,7 +744,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza tratamientos
      */
@@ -662,52 +754,54 @@ class SyncRepository @Inject constructor(
             val entityType = EntityType.TRATAMIENTOS.value
             var uploaded = 0
             var uploadErrors = 0
-            
+
             // 1. Subir cambios locales
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             Log.d(TAG, "Encontrados ${localChanges.size} tratamientos para sincronizar")
-            
+
             localChanges.forEach { metadata ->
                 try {
-                    if (metadata.isDeleted) {
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("tratamientos")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        val tratamiento = tratamientoDao.getTratamientoById(metadata.localId.toInt())
-                        if (tratamiento != null) {
-                            val dto = tratamiento.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
                             if (metadata.remoteId != null) {
                                 supabaseClient.client
                                     .from("tratamientos")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                val result = supabaseClient.client
-                                    .from("tratamientos")
-                                    .insert(dto)
-                                    .decodeSingle<TratamientoDto>()
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
-                            Log.d(TAG, "✅ Tratamiento subido exitosamente")
+                        } else {
+                            val tratamiento = tratamientoDao.getTratamientoById(metadata.localId.toInt())
+                            if (tratamiento != null) {
+                                val dto = tratamiento.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    supabaseClient.client
+                                        .from("tratamientos")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    val result = supabaseClient.client
+                                        .from("tratamientos")
+                                        .insert(dto)
+                                        .decodeSingle<TratamientoDto>()
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                                Log.d(TAG, "✅ Tratamiento subido exitosamente")
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -720,25 +814,27 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // 2. Descargar cambios desde Supabase
             Log.d(TAG, "Descargando tratamientos desde Supabase...")
-            val remoteTratamientos = supabaseClient.client
-                .from("tratamientos")
-                .select(Columns.ALL)
-                .decodeList<TratamientoDto>()
-            
+            val remoteTratamientos = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("tratamientos")
+                    .select(Columns.ALL)
+                    .decodeList<TratamientoDto>()
+            }
+
             Log.d(TAG, "Descargados ${remoteTratamientos.size} tratamientos desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteTratamientos.forEach { dto ->
                 try {
                     val localEntity = dto.toEntity()
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         val localId = tratamientoDao.insert(localEntity)
                         syncMetadataDao.insert(
@@ -758,13 +854,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar tratamientos", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.TRATAMIENTOS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de tratamientos: ${e.message}", e)
@@ -778,7 +884,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza historial médico
      */
@@ -788,52 +894,54 @@ class SyncRepository @Inject constructor(
             val entityType = EntityType.HISTORIAL_MEDICO.value
             var uploaded = 0
             var uploadErrors = 0
-            
+
             // 1. Subir cambios locales
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             Log.d(TAG, "Encontrados ${localChanges.size} historiales médicos para sincronizar")
-            
+
             localChanges.forEach { metadata ->
                 try {
-                    if (metadata.isDeleted) {
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("historial_medico")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        val historial = historialMedicoDao.getHistorialById(metadata.localId.toInt())
-                        if (historial != null) {
-                            val dto = historial.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
                             if (metadata.remoteId != null) {
                                 supabaseClient.client
                                     .from("historial_medico")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                val result = supabaseClient.client
-                                    .from("historial_medico")
-                                    .insert(dto)
-                                    .decodeSingle<HistorialMedicoDto>()
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
-                            Log.d(TAG, "✅ Historial médico subido exitosamente")
+                        } else {
+                            val historial = historialMedicoDao.getRegistroById(metadata.localId.toInt())
+                            if (historial != null) {
+                                val dto = historial.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    supabaseClient.client
+                                        .from("historial_medico")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    val result = supabaseClient.client
+                                        .from("historial_medico")
+                                        .insert(dto)
+                                        .decodeSingle<HistorialMedicoDto>()
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                                Log.d(TAG, "✅ Historial médico subido exitosamente")
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -846,25 +954,27 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // 2. Descargar cambios desde Supabase
             Log.d(TAG, "Descargando historiales médicos desde Supabase...")
-            val remoteHistoriales = supabaseClient.client
-                .from("historial_medico")
-                .select(Columns.ALL)
-                .decodeList<HistorialMedicoDto>()
-            
+            val remoteHistoriales = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("historial_medico")
+                    .select(Columns.ALL)
+                    .decodeList<HistorialMedicoDto>()
+            }
+
             Log.d(TAG, "Descargados ${remoteHistoriales.size} historiales médicos desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteHistoriales.forEach { dto ->
                 try {
                     val localEntity = dto.toEntity()
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         val localId = historialMedicoDao.insert(localEntity)
                         syncMetadataDao.insert(
@@ -884,13 +994,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar historial médico", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.HISTORIAL_MEDICO.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de historial médico: ${e.message}", e)
@@ -904,7 +1024,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Sincroniza ingresos diarios
      */
@@ -914,52 +1034,58 @@ class SyncRepository @Inject constructor(
             val entityType = EntityType.DAILY_INCOME.value
             var uploaded = 0
             var uploadErrors = 0
-            
+
             // 1. Subir cambios locales
             val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
             Log.d(TAG, "Encontrados ${localChanges.size} ingresos diarios para sincronizar")
-            
+
             localChanges.forEach { metadata ->
                 try {
-                    if (metadata.isDeleted) {
-                        if (metadata.remoteId != null) {
-                            supabaseClient.client
-                                .from("daily_income")
-                                .delete {
-                                    filter {
-                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
-                                    }
-                                }
-                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
-                        }
-                    } else {
-                        val dailyIncome = dailyIncomeDao.getDailyIncomeById(metadata.localId)
-                        if (dailyIncome != null) {
-                            val dto = dailyIncome.toDto()
-                            
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        if (metadata.isDeleted) {
                             if (metadata.remoteId != null) {
                                 supabaseClient.client
                                     .from("daily_income")
-                                    .update(dto) {
+                                    .delete {
                                         filter {
                                             eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
                                         }
                                     }
-                            } else {
-                                val result = supabaseClient.client
-                                    .from("daily_income")
-                                    .insert(dto)
-                                    .decodeSingle<DailyIncomeDto>()
-                                metadata.remoteId = result.id.toString()
+                                syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
                             }
-                            
-                            syncMetadataDao.markAsSynced(
-                                entityType,
-                                metadata.localId,
-                                metadata.remoteId!!
-                            )
-                            uploaded++
-                            Log.d(TAG, "✅ Ingreso diario subido exitosamente")
+                        } else {
+                            // Modificado: Usar getByDoctorAndDate (necesitamos doctorId)
+                            val dailyIncomes = dailyIncomeDao.getAllDailyIncomes() // Necesitamos implementar este método
+                            val dailyIncome = dailyIncomes.find { it.id == metadata.localId }
+
+                            if (dailyIncome != null) {
+                                val dto = dailyIncome.toDto()
+
+                                if (metadata.remoteId != null) {
+                                    supabaseClient.client
+                                        .from("daily_income")
+                                        .update(dto) {
+                                            filter {
+                                                eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                            }
+                                        }
+                                } else {
+                                    // Aseguramos el tipo genérico
+                                    val result = supabaseClient.client
+                                        .from("daily_income")
+                                        .insert(dto)
+                                        .decodeSingle<DailyIncomeDto>() // Asegúrate de importar el DTO
+                                    metadata.remoteId = result.id.toString()
+                                }
+
+                                syncMetadataDao.markAsSynced(
+                                    entityType,
+                                    metadata.localId,
+                                    metadata.remoteId!!
+                                )
+                                uploaded++
+                                Log.d(TAG, "✅ Ingreso diario subido exitosamente")
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -972,25 +1098,27 @@ class SyncRepository @Inject constructor(
                     uploadErrors++
                 }
             }
-            
+
             // 2. Descargar cambios desde Supabase
             Log.d(TAG, "Descargando ingresos diarios desde Supabase...")
-            val remoteDailyIncomes = supabaseClient.client
-                .from("daily_income")
-                .select(Columns.ALL)
-                .decodeList<DailyIncomeDto>()
-            
+            val remoteDailyIncomes = withTimeout(REQUEST_TIMEOUT_MS) {
+                supabaseClient.client
+                    .from("daily_income")
+                    .select(Columns.ALL)
+                    .decodeList<DailyIncomeDto>() // Asegúrate de importar el DTO
+            }
+
             Log.d(TAG, "Descargados ${remoteDailyIncomes.size} ingresos diarios desde Supabase")
             var downloaded = 0
             var downloadErrors = 0
-            
+
             remoteDailyIncomes.forEach { dto ->
                 try {
                     val localEntity = dto.toEntity()
-                    val existingMetadata = dto.id?.let { 
-                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    val existingMetadata = dto.id?.let {
+                        syncMetadataDao.getByRemoteId(it.toString())
                     }
-                    
+
                     if (existingMetadata == null) {
                         val localId = dailyIncomeDao.insert(localEntity)
                         syncMetadataDao.insert(
@@ -1010,13 +1138,23 @@ class SyncRepository @Inject constructor(
                     downloadErrors++
                 }
             }
-            
+
             return@coroutineScope EntitySyncResult(
                 entityType = entityType,
                 success = uploadErrors == 0 && downloadErrors == 0,
                 uploaded = uploaded,
                 downloaded = downloaded,
                 errors = uploadErrors + downloadErrors
+            )
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Timeout al sincronizar ingresos diarios", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.DAILY_INCOME.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = "Timeout"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de ingresos diarios: ${e.message}", e)
@@ -1030,7 +1168,7 @@ class SyncRepository @Inject constructor(
             )
         }
     }
-    
+
     /**
      * Inicializa metadata para datos existentes que no tienen registro de sincronización
      */
@@ -1041,10 +1179,10 @@ class SyncRepository @Inject constructor(
             val pacientes = pacienteDao.getAllPacientesList()
             Log.d(TAG, "Encontrados ${pacientes.size} pacientes locales")
             var newMetadata = 0
-            
+
             pacientes.forEach { paciente ->
                 val exists = syncMetadataDao.getMetadata(
-                    EntityType.PACIENTES.value, 
+                    EntityType.PACIENTES.value,
                     paciente.id
                 )
                 if (exists == null) {
@@ -1062,7 +1200,7 @@ class SyncRepository @Inject constructor(
                 }
             }
             Log.d(TAG, "Creados $newMetadata nuevos registros de metadata para pacientes")
-            
+
             // Inicializar appointments
             val appointments = appointmentDao.getAllAppointmentsList()
             appointments.forEach { appointment ->
@@ -1082,7 +1220,7 @@ class SyncRepository @Inject constructor(
                     )
                 }
             }
-            
+
             // Inicializar consultas
             val consultas = consultaDao.getAllConsultasList()
             consultas.forEach { consulta ->
@@ -1102,7 +1240,7 @@ class SyncRepository @Inject constructor(
                     )
                 }
             }
-            
+
             // Inicializar tratamientos
             val tratamientos = tratamientoDao.getAllTratamientosList()
             tratamientos.forEach { tratamiento ->
@@ -1122,7 +1260,7 @@ class SyncRepository @Inject constructor(
                     )
                 }
             }
-            
+
             // Inicializar historial médico
             val historiales = historialMedicoDao.getAllHistorialList()
             historiales.forEach { historial ->
@@ -1142,32 +1280,32 @@ class SyncRepository @Inject constructor(
                     )
                 }
             }
-            
+
             true
         } catch (e: Exception) {
             false
         }
     }
-    
+
     /**
      * Marca una entidad para sincronización
      */
     suspend fun markForSync(entityType: EntityType, localId: Long) {
         syncMetadataDao.upsertForSync(entityType.value, localId)
     }
-    
+
     /**
      * Observa el número de cambios no sincronizados
      */
     fun observeUnsyncedCount(): Flow<Int> = syncMetadataDao.observeUnsyncedCount()
-    
+
     /**
      * Obtiene el estado actual de sincronización
      */
     suspend fun getSyncStatus(): SyncStatus = withContext(Dispatchers.IO) {
         val unsyncedCount = syncMetadataDao.countUnsyncedChanges()
         val errorCount = syncMetadataDao.getErrorRecords().size
-        
+
         SyncStatus(
             hasUnsyncedChanges = unsyncedCount > 0,
             unsyncedCount = unsyncedCount,
@@ -1175,7 +1313,7 @@ class SyncRepository @Inject constructor(
             isConnected = supabaseClient.isConnected()
         )
     }
-    
+
     /**
      * Resetea los intentos de sincronización para un tipo de entidad
      */
