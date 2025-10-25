@@ -116,7 +116,7 @@ class SyncRepository @Inject constructor(
                     
                     if (existingMetadata == null) {
                         // Verificar si ya existe un usuario con ese ID
-                        val existingUsuario = usuarioDao.getUsuarioById(dto.id ?: 0)
+                        val existingUsuario = usuarioDao.getUsuarioById(dto.id?.toInt() ?: 0)
                         if (existingUsuario == null) {
                             // Nueva entidad desde Supabase
                             Log.d(TAG, "Insertando nuevo usuario desde Supabase...")
@@ -195,7 +195,7 @@ class SyncRepository @Inject constructor(
                     
                     if (existingMetadata == null) {
                         // Verificar si ya existe un médico con ese ID
-                        val existingMedico = medicoDao.getMedicoById(dto.id ?: 0)
+                        val existingMedico = medicoDao.getMedicoById(dto.id?.toInt() ?: 0)
                         if (existingMedico == null) {
                             // Nueva entidad desde Supabase
                             Log.d(TAG, "Insertando nuevo médico desde Supabase...")
@@ -530,57 +530,505 @@ class SyncRepository @Inject constructor(
      * Sincroniza consultas
      * Implementación similar a syncPacientes y syncAppointments
      */
-    private suspend fun syncConsultas(): EntitySyncResult {
-        // TODO: Implementar sincronización de consultas
-        return EntitySyncResult(
-            entityType = EntityType.CONSULTAS.value,
-            success = true,
-            uploaded = 0,
-            downloaded = 0,
-            errors = 0
-        )
+    private suspend fun syncConsultas(): EntitySyncResult = coroutineScope {
+        Log.d(TAG, "Sincronizando CONSULTAS...")
+        try {
+            val entityType = EntityType.CONSULTAS.value
+            var uploaded = 0
+            var uploadErrors = 0
+            
+            // 1. Subir cambios locales
+            val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
+            Log.d(TAG, "Encontrados ${localChanges.size} consultas para sincronizar")
+            
+            localChanges.forEach { metadata ->
+                try {
+                    if (metadata.isDeleted) {
+                        if (metadata.remoteId != null) {
+                            supabaseClient.client
+                                .from("consultas")
+                                .delete {
+                                    filter {
+                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                    }
+                                }
+                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
+                        }
+                    } else {
+                        val consulta = consultaDao.getConsultaById(metadata.localId)
+                        if (consulta != null) {
+                            val dto = consulta.toDto()
+                            
+                            if (metadata.remoteId != null) {
+                                supabaseClient.client
+                                    .from("consultas")
+                                    .update(dto) {
+                                        filter {
+                                            eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                        }
+                                    }
+                            } else {
+                                val result = supabaseClient.client
+                                    .from("consultas")
+                                    .insert(dto)
+                                    .decodeSingle<ConsultaDto>()
+                                metadata.remoteId = result.id.toString()
+                            }
+                            
+                            syncMetadataDao.markAsSynced(
+                                entityType,
+                                metadata.localId,
+                                metadata.remoteId!!
+                            )
+                            uploaded++
+                            Log.d(TAG, "✅ Consulta subida exitosamente")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al sincronizar consulta ${metadata.localId}: ${e.message}", e)
+                    syncMetadataDao.updateSyncError(
+                        entityType,
+                        metadata.localId,
+                        e.message ?: "Error desconocido"
+                    )
+                    uploadErrors++
+                }
+            }
+            
+            // 2. Descargar cambios desde Supabase
+            Log.d(TAG, "Descargando consultas desde Supabase...")
+            val remoteConsultas = supabaseClient.client
+                .from("consultas")
+                .select(Columns.ALL)
+                .decodeList<ConsultaDto>()
+            
+            Log.d(TAG, "Descargadas ${remoteConsultas.size} consultas desde Supabase")
+            var downloaded = 0
+            var downloadErrors = 0
+            
+            remoteConsultas.forEach { dto ->
+                try {
+                    val localEntity = dto.toEntity()
+                    val existingMetadata = dto.id?.let { 
+                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    }
+                    
+                    if (existingMetadata == null) {
+                        val localId = consultaDao.insert(localEntity)
+                        syncMetadataDao.insert(
+                            SyncMetadata(
+                                entityType = entityType,
+                                localId = localId,
+                                remoteId = dto.id.toString(),
+                                lastSynced = System.currentTimeMillis(),
+                                needsSync = false
+                            )
+                        )
+                        downloaded++
+                        Log.d(TAG, "✅ Consulta descargada exitosamente")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al descargar consulta ID ${dto.id}: ${e.message}", e)
+                    downloadErrors++
+                }
+            }
+            
+            return@coroutineScope EntitySyncResult(
+                entityType = entityType,
+                success = uploadErrors == 0 && downloadErrors == 0,
+                uploaded = uploaded,
+                downloaded = downloaded,
+                errors = uploadErrors + downloadErrors
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en sincronización de consultas: ${e.message}", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.CONSULTAS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = e.message
+            )
+        }
     }
     
     /**
      * Sincroniza tratamientos
      */
-    private suspend fun syncTratamientos(): EntitySyncResult {
-        // TODO: Implementar sincronización de tratamientos
-        return EntitySyncResult(
-            entityType = EntityType.TRATAMIENTOS.value,
-            success = true,
-            uploaded = 0,
-            downloaded = 0,
-            errors = 0
-        )
+    private suspend fun syncTratamientos(): EntitySyncResult = coroutineScope {
+        Log.d(TAG, "Sincronizando TRATAMIENTOS...")
+        try {
+            val entityType = EntityType.TRATAMIENTOS.value
+            var uploaded = 0
+            var uploadErrors = 0
+            
+            // 1. Subir cambios locales
+            val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
+            Log.d(TAG, "Encontrados ${localChanges.size} tratamientos para sincronizar")
+            
+            localChanges.forEach { metadata ->
+                try {
+                    if (metadata.isDeleted) {
+                        if (metadata.remoteId != null) {
+                            supabaseClient.client
+                                .from("tratamientos")
+                                .delete {
+                                    filter {
+                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                    }
+                                }
+                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
+                        }
+                    } else {
+                        val tratamiento = tratamientoDao.getTratamientoById(metadata.localId.toInt())
+                        if (tratamiento != null) {
+                            val dto = tratamiento.toDto()
+                            
+                            if (metadata.remoteId != null) {
+                                supabaseClient.client
+                                    .from("tratamientos")
+                                    .update(dto) {
+                                        filter {
+                                            eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                        }
+                                    }
+                            } else {
+                                val result = supabaseClient.client
+                                    .from("tratamientos")
+                                    .insert(dto)
+                                    .decodeSingle<TratamientoDto>()
+                                metadata.remoteId = result.id.toString()
+                            }
+                            
+                            syncMetadataDao.markAsSynced(
+                                entityType,
+                                metadata.localId,
+                                metadata.remoteId!!
+                            )
+                            uploaded++
+                            Log.d(TAG, "✅ Tratamiento subido exitosamente")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al sincronizar tratamiento ${metadata.localId}: ${e.message}", e)
+                    syncMetadataDao.updateSyncError(
+                        entityType,
+                        metadata.localId,
+                        e.message ?: "Error desconocido"
+                    )
+                    uploadErrors++
+                }
+            }
+            
+            // 2. Descargar cambios desde Supabase
+            Log.d(TAG, "Descargando tratamientos desde Supabase...")
+            val remoteTratamientos = supabaseClient.client
+                .from("tratamientos")
+                .select(Columns.ALL)
+                .decodeList<TratamientoDto>()
+            
+            Log.d(TAG, "Descargados ${remoteTratamientos.size} tratamientos desde Supabase")
+            var downloaded = 0
+            var downloadErrors = 0
+            
+            remoteTratamientos.forEach { dto ->
+                try {
+                    val localEntity = dto.toEntity()
+                    val existingMetadata = dto.id?.let { 
+                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    }
+                    
+                    if (existingMetadata == null) {
+                        val localId = tratamientoDao.insert(localEntity)
+                        syncMetadataDao.insert(
+                            SyncMetadata(
+                                entityType = entityType,
+                                localId = localId,
+                                remoteId = dto.id.toString(),
+                                lastSynced = System.currentTimeMillis(),
+                                needsSync = false
+                            )
+                        )
+                        downloaded++
+                        Log.d(TAG, "✅ Tratamiento descargado exitosamente")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al descargar tratamiento ID ${dto.id}: ${e.message}", e)
+                    downloadErrors++
+                }
+            }
+            
+            return@coroutineScope EntitySyncResult(
+                entityType = entityType,
+                success = uploadErrors == 0 && downloadErrors == 0,
+                uploaded = uploaded,
+                downloaded = downloaded,
+                errors = uploadErrors + downloadErrors
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en sincronización de tratamientos: ${e.message}", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.TRATAMIENTOS.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = e.message
+            )
+        }
     }
     
     /**
      * Sincroniza historial médico
      */
-    private suspend fun syncHistorialMedico(): EntitySyncResult {
-        // TODO: Implementar sincronización de historial médico
-        return EntitySyncResult(
-            entityType = EntityType.HISTORIAL_MEDICO.value,
-            success = true,
-            uploaded = 0,
-            downloaded = 0,
-            errors = 0
-        )
+    private suspend fun syncHistorialMedico(): EntitySyncResult = coroutineScope {
+        Log.d(TAG, "Sincronizando HISTORIAL MÉDICO...")
+        try {
+            val entityType = EntityType.HISTORIAL_MEDICO.value
+            var uploaded = 0
+            var uploadErrors = 0
+            
+            // 1. Subir cambios locales
+            val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
+            Log.d(TAG, "Encontrados ${localChanges.size} historiales médicos para sincronizar")
+            
+            localChanges.forEach { metadata ->
+                try {
+                    if (metadata.isDeleted) {
+                        if (metadata.remoteId != null) {
+                            supabaseClient.client
+                                .from("historial_medico")
+                                .delete {
+                                    filter {
+                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                    }
+                                }
+                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
+                        }
+                    } else {
+                        val historial = historialMedicoDao.getHistorialById(metadata.localId.toInt())
+                        if (historial != null) {
+                            val dto = historial.toDto()
+                            
+                            if (metadata.remoteId != null) {
+                                supabaseClient.client
+                                    .from("historial_medico")
+                                    .update(dto) {
+                                        filter {
+                                            eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                        }
+                                    }
+                            } else {
+                                val result = supabaseClient.client
+                                    .from("historial_medico")
+                                    .insert(dto)
+                                    .decodeSingle<HistorialMedicoDto>()
+                                metadata.remoteId = result.id.toString()
+                            }
+                            
+                            syncMetadataDao.markAsSynced(
+                                entityType,
+                                metadata.localId,
+                                metadata.remoteId!!
+                            )
+                            uploaded++
+                            Log.d(TAG, "✅ Historial médico subido exitosamente")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al sincronizar historial médico ${metadata.localId}: ${e.message}", e)
+                    syncMetadataDao.updateSyncError(
+                        entityType,
+                        metadata.localId,
+                        e.message ?: "Error desconocido"
+                    )
+                    uploadErrors++
+                }
+            }
+            
+            // 2. Descargar cambios desde Supabase
+            Log.d(TAG, "Descargando historiales médicos desde Supabase...")
+            val remoteHistoriales = supabaseClient.client
+                .from("historial_medico")
+                .select(Columns.ALL)
+                .decodeList<HistorialMedicoDto>()
+            
+            Log.d(TAG, "Descargados ${remoteHistoriales.size} historiales médicos desde Supabase")
+            var downloaded = 0
+            var downloadErrors = 0
+            
+            remoteHistoriales.forEach { dto ->
+                try {
+                    val localEntity = dto.toEntity()
+                    val existingMetadata = dto.id?.let { 
+                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    }
+                    
+                    if (existingMetadata == null) {
+                        val localId = historialMedicoDao.insert(localEntity)
+                        syncMetadataDao.insert(
+                            SyncMetadata(
+                                entityType = entityType,
+                                localId = localId,
+                                remoteId = dto.id.toString(),
+                                lastSynced = System.currentTimeMillis(),
+                                needsSync = false
+                            )
+                        )
+                        downloaded++
+                        Log.d(TAG, "✅ Historial médico descargado exitosamente")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al descargar historial médico ID ${dto.id}: ${e.message}", e)
+                    downloadErrors++
+                }
+            }
+            
+            return@coroutineScope EntitySyncResult(
+                entityType = entityType,
+                success = uploadErrors == 0 && downloadErrors == 0,
+                uploaded = uploaded,
+                downloaded = downloaded,
+                errors = uploadErrors + downloadErrors
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en sincronización de historial médico: ${e.message}", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.HISTORIAL_MEDICO.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = e.message
+            )
+        }
     }
     
     /**
      * Sincroniza ingresos diarios
      */
-    private suspend fun syncDailyIncome(): EntitySyncResult {
-        // TODO: Implementar sincronización de daily income
-        return EntitySyncResult(
-            entityType = EntityType.DAILY_INCOME.value,
-            success = true,
-            uploaded = 0,
-            downloaded = 0,
-            errors = 0
-        )
+    private suspend fun syncDailyIncome(): EntitySyncResult = coroutineScope {
+        Log.d(TAG, "Sincronizando INGRESOS DIARIOS...")
+        try {
+            val entityType = EntityType.DAILY_INCOME.value
+            var uploaded = 0
+            var uploadErrors = 0
+            
+            // 1. Subir cambios locales
+            val localChanges = syncMetadataDao.getUnsyncedByType(entityType)
+            Log.d(TAG, "Encontrados ${localChanges.size} ingresos diarios para sincronizar")
+            
+            localChanges.forEach { metadata ->
+                try {
+                    if (metadata.isDeleted) {
+                        if (metadata.remoteId != null) {
+                            supabaseClient.client
+                                .from("daily_income")
+                                .delete {
+                                    filter {
+                                        eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                    }
+                                }
+                            syncMetadataDao.deleteByEntityAndLocalId(entityType, metadata.localId)
+                        }
+                    } else {
+                        val dailyIncome = dailyIncomeDao.getDailyIncomeById(metadata.localId)
+                        if (dailyIncome != null) {
+                            val dto = dailyIncome.toDto()
+                            
+                            if (metadata.remoteId != null) {
+                                supabaseClient.client
+                                    .from("daily_income")
+                                    .update(dto) {
+                                        filter {
+                                            eq("id", metadata.remoteId!!.toLongOrNull() ?: 0)
+                                        }
+                                    }
+                            } else {
+                                val result = supabaseClient.client
+                                    .from("daily_income")
+                                    .insert(dto)
+                                    .decodeSingle<DailyIncomeDto>()
+                                metadata.remoteId = result.id.toString()
+                            }
+                            
+                            syncMetadataDao.markAsSynced(
+                                entityType,
+                                metadata.localId,
+                                metadata.remoteId!!
+                            )
+                            uploaded++
+                            Log.d(TAG, "✅ Ingreso diario subido exitosamente")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al sincronizar ingreso diario ${metadata.localId}: ${e.message}", e)
+                    syncMetadataDao.updateSyncError(
+                        entityType,
+                        metadata.localId,
+                        e.message ?: "Error desconocido"
+                    )
+                    uploadErrors++
+                }
+            }
+            
+            // 2. Descargar cambios desde Supabase
+            Log.d(TAG, "Descargando ingresos diarios desde Supabase...")
+            val remoteDailyIncomes = supabaseClient.client
+                .from("daily_income")
+                .select(Columns.ALL)
+                .decodeList<DailyIncomeDto>()
+            
+            Log.d(TAG, "Descargados ${remoteDailyIncomes.size} ingresos diarios desde Supabase")
+            var downloaded = 0
+            var downloadErrors = 0
+            
+            remoteDailyIncomes.forEach { dto ->
+                try {
+                    val localEntity = dto.toEntity()
+                    val existingMetadata = dto.id?.let { 
+                        syncMetadataDao.getByRemoteId(it.toString()) 
+                    }
+                    
+                    if (existingMetadata == null) {
+                        val localId = dailyIncomeDao.insert(localEntity)
+                        syncMetadataDao.insert(
+                            SyncMetadata(
+                                entityType = entityType,
+                                localId = localId,
+                                remoteId = dto.id.toString(),
+                                lastSynced = System.currentTimeMillis(),
+                                needsSync = false
+                            )
+                        )
+                        downloaded++
+                        Log.d(TAG, "✅ Ingreso diario descargado exitosamente")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al descargar ingreso diario ID ${dto.id}: ${e.message}", e)
+                    downloadErrors++
+                }
+            }
+            
+            return@coroutineScope EntitySyncResult(
+                entityType = entityType,
+                success = uploadErrors == 0 && downloadErrors == 0,
+                uploaded = uploaded,
+                downloaded = downloaded,
+                errors = uploadErrors + downloadErrors
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en sincronización de ingresos diarios: ${e.message}", e)
+            return@coroutineScope EntitySyncResult(
+                entityType = EntityType.DAILY_INCOME.value,
+                success = false,
+                uploaded = 0,
+                downloaded = 0,
+                errors = 1,
+                errorMessage = e.message
+            )
+        }
     }
     
     /**

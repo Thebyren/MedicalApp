@@ -7,14 +7,19 @@ import com.medical.app.data.entities.EntityType
 import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 class AppointmentRepository @Inject constructor(
     private val appointmentDao: AppointmentDao,
     private val dailyIncomeRepository: DailyIncomeRepository,  // PASO 3: Descomentado
-    private val syncRepository: SyncRepository
+    private val syncRepositoryProvider: Provider<SyncRepository>
 ) {
+    
+    // Lazy access to break circular dependency
+    private val syncRepository: SyncRepository
+        get() = syncRepositoryProvider.get()
 
     fun getUpcomingAppointments(patientId: Long, date: Date): Flow<List<Appointment>> {
         return appointmentDao.getUpcomingAppointments(patientId, date)

@@ -57,7 +57,7 @@ data class MedicoDto(
 data class PacienteDto(
     val id: Long? = null,
     @SerialName("usuario_id")
-    val usuarioId: Long,
+    val usuarioId: Long?,
     val nombre: String,
     val apellidos: String,
     @SerialName("fecha_nacimiento")

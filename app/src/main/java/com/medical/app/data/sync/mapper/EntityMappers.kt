@@ -133,7 +133,7 @@ object EntityMappers {
     fun PacienteDto.toEntity(): Paciente {
         return Paciente(
             id = id ?: 0,
-            usuarioId = usuarioId.toInt(),
+            usuarioId = usuarioId?.toInt(),
             nombre = nombre,
             apellidos = apellidos,
             fechaNacimiento = fechaNacimiento.toDate(),

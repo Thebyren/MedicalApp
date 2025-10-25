@@ -27,6 +27,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -135,9 +136,9 @@ object DatabaseModule {
     fun provideAppointmentRepository(
         appointmentDao: AppointmentDao,
         dailyIncomeRepository: DailyIncomeRepository,  // PASO 3: Descomentado
-        syncRepository: SyncRepository
+        syncRepositoryProvider: Provider<SyncRepository>
     ): AppointmentRepository {
-        return AppointmentRepository(appointmentDao, dailyIncomeRepository, syncRepository)
+        return AppointmentRepository(appointmentDao, dailyIncomeRepository, syncRepositoryProvider)
     }
     
     @Provides
@@ -145,6 +146,8 @@ object DatabaseModule {
     fun provideSyncRepository(
         supabaseClient: SupabaseClientProvider,
         syncMetadataDao: SyncMetadataDao,
+        usuarioDao: UsuarioDao,
+        medicoDao: MedicoDao,
         pacienteDao: PacienteDao,
         appointmentDao: AppointmentDao,
         consultaDao: ConsultaDao,
@@ -155,6 +158,8 @@ object DatabaseModule {
         return SyncRepository(
             supabaseClient,
             syncMetadataDao,
+            usuarioDao,
+            medicoDao,
             pacienteDao,
             appointmentDao,
             consultaDao,
