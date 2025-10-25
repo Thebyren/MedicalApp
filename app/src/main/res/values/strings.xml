@@ -114,4 +114,8 @@
     <string name="recetas">Recetas</string>
     <string name="reportes">Reportes</string>
     <string name="m_s">Más</string>
+    <string name="home">Inicio</string>
+    <string name="profile">perfil</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="settings">configuracion</string>
 </resources>

@@ -18,12 +18,12 @@ import java.util.Date
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["usuarioId"], unique = true)]
+    indices = [Index(value = ["usuarioId"])]
 )
 data class Paciente(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val usuarioId: Int,
+    val id: Long = 0,
+    val usuarioId: Int? = null,
     val nombre: String,
     val apellidos: String,
     val fechaNacimiento: Date,

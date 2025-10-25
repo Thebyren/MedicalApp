@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "9e0c86bda5be6c0abd493e07812711f5",
+    "identityHash": "37c11744f6f24c2b4f1ee541bda0db85",
     "entities": [
       {
         "tableName": "usuarios",
@@ -700,6 +700,26 @@
             "id"
           ]
         },
+        "indices": [
+          {
+            "name": "index_appointments_patientId",
+            "unique": false,
+            "columnNames": [
+              "patientId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_appointments_patientId` ON `${TABLE_NAME}` (`patientId`)"
+          },
+          {
+            "name": "index_appointments_doctorId",
+            "unique": false,
+            "columnNames": [
+              "doctorId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_appointments_doctorId` ON `${TABLE_NAME}` (`doctorId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "pacientes",
@@ -728,7 +748,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9e0c86bda5be6c0abd493e07812711f5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '37c11744f6f24c2b4f1ee541bda0db85')"
     ]
   }
 }

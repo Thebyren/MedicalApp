@@ -69,4 +69,7 @@ interface ConsultaDao : BaseDao<Consulta> {
 
     @Query("SELECT * FROM consultas ORDER BY fechaConsulta DESC")
     fun getConsultasPagingSource(): PagingSource<Int, Consulta>
+    
+    @Query("SELECT * FROM consultas")
+    suspend fun getAllConsultasList(): List<Consulta>
 }

@@ -19,6 +19,7 @@ import javax.inject.Inject
 class MedicoHomeViewModel @Inject constructor(
     private val appointmentRepository: AppointmentRepository,
     private val patientRepository: PacienteRepository,
+    // private val dailyIncomeRepository: com.medical.app.data.repository.DailyIncomeRepository,  // TEMPORALMENTE COMENTADO
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -54,16 +55,37 @@ class MedicoHomeViewModel @Inject constructor(
                 }.time
 
                 val appointments = appointmentRepository.getAppointmentsForDateRange(startOfDay, endOfDay).first()
-                // --- LA CORRECCIÓN ESTÁ AQUÍ ---
                 val appointmentsToday = appointments.count { it.doctorId == doctorId.toLong() }
 
-                // 3. Get monthly earnings (TODO: Implement this logic in the repository)
+                // 3. Get today's income - TEMPORALMENTE COMENTADO
+                // val todayIncome = dailyIncomeRepository.getTodayIncome(doctorId.toLong())
+                // val dailyEarnings = todayIncome?.totalIncome ?: 0.0
+                // val completedAppointmentsToday = todayIncome?.completedAppointments ?: 0
+                val dailyEarnings = 0.0
+                val completedAppointmentsToday = 0
+
+                // 4. Get monthly earnings - TEMPORALMENTE COMENTADO
+                // val startOfMonth = Calendar.getInstance().apply {
+                //     set(Calendar.DAY_OF_MONTH, 1)
+                //     set(Calendar.HOUR_OF_DAY, 0)
+                //     set(Calendar.MINUTE, 0)
+                //     set(Calendar.SECOND, 0)
+                //     set(Calendar.MILLISECOND, 0)
+                // }.time
+                // 
+                // val monthlyEarnings = dailyIncomeRepository.getTotalIncomeByDateRange(
+                //     doctorId.toLong(),
+                //     startOfMonth,
+                //     endOfDay
+                // )
                 val monthlyEarnings = 0.0
 
                 _stats.value = DoctorStats(
                     appointmentsToday = appointmentsToday,
                     totalPatients = totalPatients,
-                    monthlyEarnings = monthlyEarnings
+                    monthlyEarnings = monthlyEarnings,
+                    dailyEarnings = dailyEarnings,
+                    completedAppointmentsToday = completedAppointmentsToday
                 )
             } catch (e: Exception) {
                 _error.value = "Error loading stats: ${e.message}"

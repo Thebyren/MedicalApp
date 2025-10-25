@@ -23,6 +23,9 @@ interface PacienteDao : BaseDao<Paciente> {
 
     @Query("SELECT * FROM pacientes")
     fun getAllPacientes(): Flow<List<Paciente>>
+    
+    @Query("SELECT * FROM pacientes")
+    suspend fun getAllPacientesList(): List<Paciente>
 
     @Query("SELECT COUNT(*) FROM pacientes WHERE numeroSeguridadSocial = :numeroSeguridadSocial AND id != :excludeId")
     suspend fun existeNumeroSeguridadSocial(numeroSeguridadSocial: String, excludeId: Int = 0): Int
@@ -32,6 +35,7 @@ interface PacienteDao : BaseDao<Paciente> {
         WHERE nombre LIKE '%' || :query || '%'
         OR apellidos LIKE '%' || :query || '%'
         OR numeroSeguridadSocial LIKE '%' || :query || '%'
+        ORDER BY id DESC
     """)
     fun getPacientesPagingSource(query: String): PagingSource<Int, Paciente>
 

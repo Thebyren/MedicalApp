@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.medical.app.data.model.Patient
 import com.medical.app.databinding.FragmentPatientDetailBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,7 +33,27 @@ class PatientDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        setupToolbar()
+        setupFab()
         observeViewModel()
+    }
+    
+    private fun setupToolbar() {
+        binding.toolbar.setNavigationOnClickListener {
+            findNavController().navigateUp()
+        }
+    }
+    
+    private fun setupFab() {
+        binding.fabEditPatient.setOnClickListener {
+            // Obtener el patientId del ViewModel
+            val patientId = viewModel.patient.value?.id?.toString() ?: return@setOnClickListener
+            
+            // Navegar al formulario de edición con el patientId
+            val action = PatientDetailFragmentDirections
+                .actionPatientDetailToAddEditPatient(patientId)
+            findNavController().navigate(action)
+        }
     }
 
     private fun observeViewModel() {

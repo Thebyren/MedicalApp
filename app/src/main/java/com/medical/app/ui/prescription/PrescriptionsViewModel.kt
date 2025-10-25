@@ -39,12 +39,13 @@ class PrescriptionsViewModel @Inject constructor(
                     return@launch
                 }
 
-                // TODO: Obtener prescripciones del médico actual
-                // Por ahora, mostrar lista vacía
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    prescriptions = emptyList()
-                )
+                // Cargar prescripciones independientes (sin consulta asociada)
+                tratamientoRepository.getIndependentPrescriptions().collect { prescriptions ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        prescriptions = prescriptions
+                    )
+                }
                 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

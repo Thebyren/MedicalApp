@@ -56,4 +56,7 @@ interface HistorialMedicoDao : BaseDao<HistorialMedico> {
         pacienteId: Int,
         query: String
     ): LiveData<List<HistorialMedico>>
+    
+    @Query("SELECT * FROM historial_medico")
+    suspend fun getAllHistorialList(): List<HistorialMedico>
 }

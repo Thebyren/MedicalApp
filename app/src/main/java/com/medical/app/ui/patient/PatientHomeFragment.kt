@@ -11,14 +11,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.medical.app.R
 import com.medical.app.data.entities.Appointment
+import com.medical.app.data.local.SessionManager
 import com.medical.app.databinding.FragmentPatientHomeBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PatientHomeFragment : Fragment() {
@@ -28,6 +31,9 @@ class PatientHomeFragment : Fragment() {
     
     private val viewModel: PatientHomeViewModel by viewModels()
     private val args: PatientHomeFragmentArgs by navArgs()
+    
+    @Inject
+    lateinit var sessionManager: SessionManager
     
     private val dateFormat = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy", Locale.getDefault())
     private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -70,7 +76,43 @@ class PatientHomeFragment : Fragment() {
     private fun setupClickListeners() {
         val action = PatientHomeFragmentDirections.actionPatientHomeToRegistroConsultaFragment(args.patientId.toString())
 
-        // Botón de nueva cita
+        // Configurar menú del toolbar
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_notifications -> {
+                    showError("Notificaciones próximamente")
+                    true
+                }
+                R.id.action_settings -> {
+                    // Navegar al perfil del paciente (que incluye logout)
+                    findNavController().navigate(
+                        PatientHomeFragmentDirections.actionPatientHomeToPatientProfile(args.patientId)
+                    )
+                    true
+                }
+                R.id.action_logout -> {
+                    showLogoutConfirmation()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        // Card de Recetas
+        binding.cardPrescriptions.setOnClickListener {
+            findNavController().navigate(
+                PatientHomeFragmentDirections.actionPatientHomeToPatientPrescriptions(args.patientId)
+            )
+        }
+        
+        // Card de Perfil
+        binding.cardProfile.setOnClickListener {
+            findNavController().navigate(
+                PatientHomeFragmentDirections.actionPatientHomeToPatientProfile(args.patientId)
+            )
+        }
+
+        // Botón de nueva cita (FAB)
         binding.fabNewAppointment.setOnClickListener {
             findNavController().navigate(action)
         }
@@ -85,8 +127,7 @@ class PatientHomeFragment : Fragment() {
         binding.cardNextAppointment.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewAppointment)
             .setOnClickListener {
                 viewModel.uiState.value.nextAppointment?.let { appointment ->
-                    // Como el fragmento no existe, esta navegación se queda comentada.
-                    // findNavController().navigate(PatientHomeFragmentDirections.actionToAppointmentDetail(appointment.id))
+                    showError("Detalles de cita próximamente")
                 }
             }
     }
@@ -166,6 +207,27 @@ class PatientHomeFragment : Fragment() {
         view?.let {
             Snackbar.make(it, message, Snackbar.LENGTH_LONG).show()
         }
+    }
+    
+    private fun showLogoutConfirmation() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Cerrar sesión")
+            .setMessage("¿Estás seguro de que quieres cerrar sesión?")
+            .setPositiveButton("Sí") { _, _ ->
+                logout()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun logout() {
+        // Cerrar sesión
+        sessionManager.logoutUser()
+        
+        // Navegar al login y limpiar el back stack
+        findNavController().navigate(
+            R.id.action_global_to_loginFragment
+        )
     }
     
     override fun onDestroyView() {

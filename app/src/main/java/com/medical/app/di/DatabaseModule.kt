@@ -3,25 +3,31 @@ package com.medical.app.di
 import android.content.Context
 import com.medical.app.data.dao.AppointmentDao
 import com.medical.app.data.dao.ConsultaDao
+import com.medical.app.data.dao.DailyIncomeDao
 import com.medical.app.data.dao.HistorialMedicoDao
 import com.medical.app.data.dao.MedicoDao
 import com.medical.app.data.dao.MedicoPacienteDao
 import com.medical.app.data.dao.PacienteDao
+import com.medical.app.data.dao.SyncMetadataDao
 import com.medical.app.data.dao.TratamientoDao
 import com.medical.app.data.dao.UsuarioDao
 import com.medical.app.data.database.AppDatabase
 import com.medical.app.data.repository.AppointmentRepository
 import com.medical.app.data.repository.AuthRepository
 import com.medical.app.data.repository.ConsultaRepository
+import com.medical.app.data.repository.DailyIncomeRepository
 import com.medical.app.data.repository.MedicoRepository
 import com.medical.app.data.repository.PacienteRepository
+import com.medical.app.data.repository.SyncRepository
 import com.medical.app.data.repository.TratamientoRepository
+import com.medical.app.data.remote.SupabaseClientProvider
 import com.medical.app.util.security.PasswordHasher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -62,20 +68,34 @@ object DatabaseModule {
     @Provides
     fun provideAppointmentDao(database: AppDatabase): AppointmentDao = database.appointmentDao()
 
+    @Provides
+    fun provideDailyIncomeDao(database: AppDatabase): DailyIncomeDao = database.dailyIncomeDao()  // PASO 2: Descomentado
+
+    @Provides
+    fun provideSyncMetadataDao(database: AppDatabase): SyncMetadataDao = database.syncMetadataDao()
+
     // Repositorios
     @Provides
     @Singleton
-    fun provideAuthRepository(usuarioDao: UsuarioDao, passwordHasher: PasswordHasher): AuthRepository {
+    fun provideAuthRepository(
+        usuarioDao: UsuarioDao, 
+        pacienteDao: PacienteDao,
+        passwordHasher: PasswordHasher
+    ): AuthRepository {
         return AuthRepository(
             usuarioDao,
-            passwordHasher = passwordHasher
+            pacienteDao,
+            passwordHasher
         )
     }
 
     @Provides
     @Singleton
-    fun provideConsultaRepository(consultaDao: ConsultaDao): ConsultaRepository {
-        return ConsultaRepository(consultaDao)
+    fun provideConsultaRepository(
+        consultaDao: ConsultaDao,
+        syncRepository: SyncRepository
+    ): ConsultaRepository {
+        return ConsultaRepository(consultaDao, syncRepository)
     }
 
     @Provides
@@ -86,19 +106,66 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun providePacienteRepository(pacienteDao: PacienteDao): PacienteRepository {
-        return PacienteRepository(pacienteDao)
+    fun providePacienteRepository(
+        pacienteDao: PacienteDao,
+        syncRepository: SyncRepository
+    ): PacienteRepository {
+        return PacienteRepository(pacienteDao, syncRepository)
     }
 
     @Provides
     @Singleton
-    fun provideTratamientoRepository(tratamientoDao: TratamientoDao): TratamientoRepository {
-        return TratamientoRepository(tratamientoDao)
+    fun provideTratamientoRepository(
+        tratamientoDao: TratamientoDao,
+        syncRepository: SyncRepository
+    ): TratamientoRepository {
+        return TratamientoRepository(tratamientoDao, syncRepository)
     }
 
     @Provides
     @Singleton
-    fun provideAppointmentRepository(appointmentDao: AppointmentDao): AppointmentRepository {
-        return AppointmentRepository(appointmentDao)
+    fun provideDailyIncomeRepository(
+        dailyIncomeDao: DailyIncomeDao,
+        syncRepository: SyncRepository
+    ): DailyIncomeRepository {
+        return DailyIncomeRepository(dailyIncomeDao, syncRepository)
+    }  // PASO 3: Descomentado
+
+    @Provides
+    @Singleton
+    fun provideAppointmentRepository(
+        appointmentDao: AppointmentDao,
+        dailyIncomeRepository: DailyIncomeRepository,  // PASO 3: Descomentado
+        syncRepositoryProvider: Provider<SyncRepository>
+    ): AppointmentRepository {
+        return AppointmentRepository(appointmentDao, dailyIncomeRepository, syncRepositoryProvider)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideSyncRepository(
+        supabaseClient: SupabaseClientProvider,
+        syncMetadataDao: SyncMetadataDao,
+        usuarioDao: UsuarioDao,
+        medicoDao: MedicoDao,
+        pacienteDao: PacienteDao,
+        appointmentDao: AppointmentDao,
+        consultaDao: ConsultaDao,
+        tratamientoDao: TratamientoDao,
+        historialMedicoDao: HistorialMedicoDao,
+        dailyIncomeDao: DailyIncomeDao
+    ): SyncRepository {
+        return SyncRepository(
+            supabaseClient,
+            syncMetadataDao,
+            usuarioDao,
+            medicoDao,
+            pacienteDao,
+            appointmentDao,
+            consultaDao,
+            tratamientoDao,
+            historialMedicoDao,
+            dailyIncomeDao
+        )
     }
 }

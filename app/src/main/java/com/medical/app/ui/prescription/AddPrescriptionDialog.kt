@@ -82,9 +82,9 @@ class AddPrescriptionDialog : DialogFragment() {
         val duracion = if (duracionText.isNotBlank()) duracionText.toIntOrNull() else null
         val indicaciones = binding.etIndicaciones.text.toString().takeIf { it.isNotBlank() }
         
-        // Crear tratamiento (consultaId = 0 por ahora, se debe actualizar según la consulta real)
+        // Crear tratamiento sin consulta asociada (prescripción independiente)
         val tratamiento = Tratamiento(
-            consultaId = 0, // TODO: Obtener consultaId real
+            consultaId = null, // Prescripción independiente, no asociada a una consulta
             medicamento = medicamento,
             dosis = dosis,
             frecuencia = frecuencia,

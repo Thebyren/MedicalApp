@@ -27,7 +27,7 @@ import java.util.Date
 )
 data class Consulta(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    val id: Long = 0,
     val medicoId: Int,
     val pacienteId: Int,
     val fechaConsulta: Date,

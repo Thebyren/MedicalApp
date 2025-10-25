@@ -1,21 +1,26 @@
 package com.medical.app.data.repository
 
+import com.medical.app.data.dao.PacienteDao
 import com.medical.app.data.dao.UsuarioDao
+import com.medical.app.data.entities.Paciente
 import com.medical.app.data.entities.Usuario
+import com.medical.app.data.entities.enums.TipoUsuario
 import com.medical.app.util.security.PasswordHasher
 import com.medical.app.utils.Result
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
-import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import android.util.Log
+import java.util.Date
 
 class AuthRepository @Inject constructor(
     private val usuarioDao: UsuarioDao,
+    private val pacienteDao: PacienteDao,
     private val passwordHasher: PasswordHasher
 ) {
 
@@ -73,6 +78,26 @@ class AuthRepository @Inject constructor(
             // Insertar en la base de datos
             val userId = usuarioDao.insert(usuarioConHash)
             Log.d(TAG, "Usuario insertado con ID: $userId")
+            
+            // Si es un paciente, crear automáticamente el registro en la tabla pacientes
+            if (usuarioConHash.tipoUsuario == TipoUsuario.PACIENTE) {
+                try {
+                    val nombrePartes = usuarioConHash.nombreCompleto.split(" ")
+                    val paciente = Paciente(
+                        usuarioId = userId.toInt(),
+                        nombre = nombrePartes.firstOrNull() ?: usuarioConHash.nombreCompleto,
+                        apellidos = nombrePartes.drop(1).joinToString(" ").ifEmpty { "Sin apellidos" },
+                        fechaNacimiento = Date(), // Fecha por defecto, el usuario puede actualizarla después
+                        email = usuarioConHash.email
+                        // Los demás campos son opcionales
+                    )
+                    val pacienteId = pacienteDao.insert(paciente)
+                    Log.d(TAG, "Paciente creado automáticamente con ID: $pacienteId para usuario ID: $userId")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al crear paciente automáticamente", e)
+                    // No fallar el registro por esto, pero registrar el error
+                }
+            }
 
             emit(Result.Success(Unit))
             Log.d(TAG, "Registro completado exitosamente para: ${usuario.email}")

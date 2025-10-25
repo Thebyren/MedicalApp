@@ -20,7 +20,7 @@ import androidx.room.PrimaryKey
 data class Tratamiento(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val consultaId: Int,
+    val consultaId: Int? = null, // Nullable para permitir prescripciones independientes
     val medicamento: String,
     val dosis: String,
     val frecuencia: String,
@@ -29,7 +29,7 @@ data class Tratamiento(
 ) {
     // Constructor secundario para crear un tratamiento sin ID
     constructor(
-        consultaId: Int,
+        consultaId: Int?,
         medicamento: String,
         dosis: String,
         frecuencia: String,

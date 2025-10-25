@@ -157,7 +157,7 @@ class MedicoHomeFragment : Fragment() {
     private fun updateStatsUI(stats: DoctorStats) {
         binding.tvTotalPatients.text = stats.totalPatients.toString()
         binding.tvAppointmentsToday.text = stats.appointmentsToday.toString()
-        binding.tvMonthlyEarnings.text = formatCurrency(stats.monthlyEarnings)
+        binding.tvDailyEarnings.text = formatCurrency(stats.dailyEarnings)
     }
     
     private fun formatCurrency(amount: Double): String {
