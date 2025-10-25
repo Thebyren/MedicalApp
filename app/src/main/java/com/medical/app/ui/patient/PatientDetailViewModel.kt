@@ -59,7 +59,7 @@ class PatientDetailViewModel @Inject constructor(
                 _isLoading.value = true
                 val patientModel = _patient.value ?: return@launch
                 // Assuming repository can delete using the model's ID or you have a way to get the entity
-                repository.delete(patientModel.toEntity(patientModel.id))
+                repository.delete(patientModel.toEntity(patientModel.id.toInt()))
                 _events.value = Event.NavigateBackWithResult(deleted = true)
             } catch (e: Exception) {
                 _events.value = Event.ShowErrorMessage("Error deleting patient: ${e.message}")

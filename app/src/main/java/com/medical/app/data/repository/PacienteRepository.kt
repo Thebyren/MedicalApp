@@ -4,6 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.medical.app.data.dao.PacienteDao
+import com.medical.app.data.entities.EntityType
 import com.medical.app.data.entities.Paciente
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -15,19 +16,29 @@ import javax.inject.Singleton
  */
 @Singleton
 class PacienteRepository @Inject constructor(
-    private val pacienteDao: PacienteDao
+    private val pacienteDao: PacienteDao,
+    private val syncRepository: SyncRepository
 ) : BaseRepository<Paciente, Int> {
 
     override suspend fun insert(entity: Paciente): Long {
-        return pacienteDao.insert(entity).toLong()
+        val id = pacienteDao.insert(entity).toLong()
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.PACIENTES, id)
+        return id
     }
 
     override suspend fun update(entity: Paciente): Int {
-        return pacienteDao.update(entity)
+        val result = pacienteDao.update(entity)
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.PACIENTES, entity.id.toLong())
+        return result
     }
 
     override suspend fun delete(entity: Paciente): Int {
-        return pacienteDao.delete(entity)
+        val result = pacienteDao.delete(entity)
+        // Marcar como eliminado para sincronización
+        syncRepository.markForSync(EntityType.PACIENTES, entity.id.toLong())
+        return result
     }
 
     override suspend fun getById(id: Int): Paciente? {

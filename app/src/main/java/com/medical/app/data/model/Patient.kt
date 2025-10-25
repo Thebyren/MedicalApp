@@ -5,7 +5,7 @@ import com.medical.app.data.entities.enums.Genero
 import java.util.Date
 
 data class Patient(
-    val id: Int = 0,
+    val id: Long = 0,
     val name: String,
     val lastName: String,
     val dni: String,

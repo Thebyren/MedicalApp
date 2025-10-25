@@ -135,7 +135,7 @@ class AddEditPatientViewModel @Inject constructor(
                 }
                 
                 val patient = Patient(
-                    id = currentPatientId?.toIntOrNull() ?: 0,
+                    id = currentPatientId?.toLongOrNull() ?: 0L,
                     name = currentState.firstName.trim(),
                     lastName = currentState.lastName.trim(),
                     dni = currentState.dni.trim(),

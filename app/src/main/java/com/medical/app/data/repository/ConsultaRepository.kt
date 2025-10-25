@@ -2,6 +2,7 @@ package com.medical.app.data.repository
 
 import com.medical.app.data.dao.ConsultaDao
 import com.medical.app.data.entities.Consulta
+import com.medical.app.data.entities.EntityType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ConsultaRepository @Inject constructor(
-    private val consultaDao: ConsultaDao
+    private val consultaDao: ConsultaDao,
+    private val syncRepository: SyncRepository
 ) {
     fun getConsultasByPatient(pacienteId: Long): Flow<List<Consulta>> {
         return consultaDao.getConsultasByPatient(pacienteId)
@@ -22,19 +24,28 @@ class ConsultaRepository @Inject constructor(
     }
 
     suspend fun insertConsulta(consulta: Consulta): Long {
-        return consultaDao.insert(consulta)
+        val id = consultaDao.insert(consulta)
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.CONSULTAS, id)
+        return id
     }
 
     suspend fun updateConsulta(consulta: Consulta) {
         consultaDao.update(consulta)
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.CONSULTAS, consulta.id)
     }
 
     suspend fun deleteConsulta(consulta: Consulta) {
         consultaDao.delete(consulta)
+        // Marcar como eliminado para sincronización
+        syncRepository.markForSync(EntityType.CONSULTAS, consulta.id)
     }
 
     suspend fun deleteConsultaById(id: Long) {
         consultaDao.deleteById(id)
+        // Marcar como eliminado para sincronización
+        syncRepository.markForSync(EntityType.CONSULTAS, id)
     }
 
     fun getConsultasPager(): Flow<PagingData<Consulta>> {

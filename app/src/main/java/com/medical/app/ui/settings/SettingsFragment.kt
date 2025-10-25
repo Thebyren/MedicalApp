@@ -48,6 +48,11 @@ class SettingsFragment : Fragment() {
             // TODO: Navegar a configuración de notificaciones
         }
         
+        // Sincronización
+        binding.btnSync.setOnClickListener {
+            findNavController().navigate(R.id.action_settingsFragment_to_syncFragment)
+        }
+        
         // Cerrar sesión
         binding.btnLogout.setOnClickListener {
             showLogoutConfirmationDialog()

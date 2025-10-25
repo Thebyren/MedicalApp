@@ -234,6 +234,14 @@
             app:destination="@id/loginFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_settingsFragment_to_syncFragment"
+            app:destination="@id/syncFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/syncFragment"
+        android:name="com.medical.app.ui.settings.SyncFragment"
+        android:label="Sincronización" />
 
 </navigation>

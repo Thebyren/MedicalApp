@@ -25,9 +25,10 @@ import com.medical.app.data.entities.*
         Tratamiento::class,
         HistorialMedico::class,
         Appointment::class,
-        DailyIncome::class  // PASO 1: Descomentado
+        DailyIncome::class,  // PASO 1: Descomentado
+        SyncMetadata::class  // Tabla para sincronización con Supabase
     ],
-    version = 5, // Added cost/isPaid to Appointment and DailyIncome entity
+    version = 7, // Made usuarioId nullable in pacientes table for Supabase sync
     exportSchema = true // Habilitado para mantener un historial de migraciones
 )
 @TypeConverters(Converters::class)
@@ -43,10 +44,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun historialMedicoDao(): HistorialMedicoDao
     abstract fun appointmentDao(): AppointmentDao
     abstract fun dailyIncomeDao(): DailyIncomeDao  // PASO 1: Descomentado
+    abstract fun syncMetadataDao(): SyncMetadataDao  // DAO para sincronización
 
     companion object {
         // Nombre de la base de datos
-        private const val DATABASE_NAME = "medical_app_database.db"
+        private const val DATABASE_NAME = "medical_app_db.db"
 
         // Instancia única de la base de datos (patrón Singleton)
         @Volatile
@@ -60,8 +62,8 @@ abstract class AppDatabase : RoomDatabase() {
          * - Agrega la columna 'salt' a la tabla 'usuarios' para almacenar la sal del hash de la contraseña
          */
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE usuarios ADD COLUMN salt TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN salt TEXT")
             }
         }
 
@@ -71,9 +73,9 @@ abstract class AppDatabase : RoomDatabase() {
          *   para mejorar el rendimiento de las consultas con claves foráneas
          */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_patientId ON appointments(patientId)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_doctorId ON appointments(doctorId)")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_patientId ON appointments(patientId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_doctorId ON appointments(doctorId)")
             }
         }
         
@@ -83,9 +85,9 @@ abstract class AppDatabase : RoomDatabase() {
          *   para permitir prescripciones independientes sin consulta asociada
          */
         private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Crear tabla temporal con la nueva estructura
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE tratamientos_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         consultaId INTEGER,
@@ -99,20 +101,20 @@ abstract class AppDatabase : RoomDatabase() {
                 """)
                 
                 // Copiar datos de la tabla antigua a la nueva
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO tratamientos_new (id, consultaId, medicamento, dosis, frecuencia, duracionDias, indicaciones)
                     SELECT id, consultaId, medicamento, dosis, frecuencia, duracionDias, indicaciones
                     FROM tratamientos
                 """)
                 
                 // Eliminar tabla antigua
-                database.execSQL("DROP TABLE tratamientos")
+                db.execSQL("DROP TABLE tratamientos")
                 
                 // Renombrar tabla nueva
-                database.execSQL("ALTER TABLE tratamientos_new RENAME TO tratamientos")
+                db.execSQL("ALTER TABLE tratamientos_new RENAME TO tratamientos")
                 
                 // Recrear índice
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_tratamientos_consultaId ON tratamientos(consultaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_tratamientos_consultaId ON tratamientos(consultaId)")
             }
         }
 
@@ -122,13 +124,13 @@ abstract class AppDatabase : RoomDatabase() {
          * - Crea la tabla daily_income para tracking de ingresos
          */
         private val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Agregar columnas cost e isPaid a appointments
-                database.execSQL("ALTER TABLE appointments ADD COLUMN cost REAL NOT NULL DEFAULT 0.0")
-                database.execSQL("ALTER TABLE appointments ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE appointments ADD COLUMN cost REAL NOT NULL DEFAULT 0.0")
+                db.execSQL("ALTER TABLE appointments ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0")
                 
                 // Crear tabla daily_income - PASO 1: Descomentado
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS daily_income (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         doctorId INTEGER NOT NULL,
@@ -140,10 +142,112 @@ abstract class AppDatabase : RoomDatabase() {
                 """)
                 
                 // Crear índice único para doctorId y date
-                database.execSQL("""
+                db.execSQL("""
                     CREATE UNIQUE INDEX IF NOT EXISTS index_daily_income_doctorId_date 
                     ON daily_income(doctorId, date)
                 """)
+            }
+        }
+
+        /**
+         * Migración de la versión 5 a la 6:
+         * - Crea la tabla sync_metadata para sincronización con Supabase
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Crear tabla sync_metadata
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS sync_metadata (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        localId INTEGER NOT NULL,
+                        remoteId TEXT,
+                        lastSynced INTEGER,
+                        updatedAt INTEGER NOT NULL,
+                        isDeleted INTEGER NOT NULL DEFAULT 0,
+                        needsSync INTEGER NOT NULL DEFAULT 1,
+                        syncAttempts INTEGER NOT NULL DEFAULT 0,
+                        lastError TEXT,
+                        lastErrorAt INTEGER,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                
+                // Crear índices para optimización
+                db.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_sync_metadata_entityType_localId 
+                    ON sync_metadata(entityType, localId)
+                """)
+                
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_sync_metadata_entityType 
+                    ON sync_metadata(entityType)
+                """)
+                
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_sync_metadata_needsSync 
+                    ON sync_metadata(needsSync)
+                """)
+                
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_sync_metadata_isDeleted 
+                    ON sync_metadata(isDeleted)
+                """)
+            }
+        }
+
+        /**
+         * Migración de la versión 6 a la 7:
+         * - Hace el campo usuarioId nullable en la tabla pacientes para permitir sincronización desde Supabase
+         */
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // SQLite no soporta ALTER COLUMN directamente, necesitamos recrear la tabla
+                
+                // 1. Crear nueva tabla temporal con usuarioId nullable
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pacientes_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        usuarioId INTEGER,
+                        nombre TEXT NOT NULL,
+                        apellidos TEXT NOT NULL,
+                        fechaNacimiento INTEGER NOT NULL,
+                        genero TEXT,
+                        telefono TEXT,
+                        direccion TEXT,
+                        numeroSeguridadSocial TEXT,
+                        contactoEmergencia TEXT,
+                        telefonoEmergencia TEXT,
+                        email TEXT NOT NULL DEFAULT '',
+                        bloodType TEXT NOT NULL DEFAULT '',
+                        allergies TEXT NOT NULL DEFAULT '',
+                        notes TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(usuarioId) REFERENCES usuarios(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                // 2. Copiar datos de la tabla antigua a la nueva
+                db.execSQL("""
+                    INSERT INTO pacientes_new (
+                        id, usuarioId, nombre, apellidos, fechaNacimiento, genero, telefono,
+                        direccion, numeroSeguridadSocial, contactoEmergencia, telefonoEmergencia,
+                        email, bloodType, allergies, notes
+                    )
+                    SELECT 
+                        id, usuarioId, nombre, apellidos, fechaNacimiento, genero, telefono,
+                        direccion, numeroSeguridadSocial, contactoEmergencia, telefonoEmergencia,
+                        email, bloodType, allergies, notes
+                    FROM pacientes
+                """)
+                
+                // 3. Eliminar tabla antigua
+                db.execSQL("DROP TABLE pacientes")
+                
+                // 4. Renombrar tabla nueva
+                db.execSQL("ALTER TABLE pacientes_new RENAME TO pacientes")
+                
+                // 5. Recrear índices
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pacientes_usuarioId ON pacientes(usuarioId)")
             }
         }
 
@@ -181,7 +285,9 @@ abstract class AppDatabase : RoomDatabase() {
                 MIGRATION_1_2,
                 MIGRATION_2_3,
                 MIGRATION_3_4,
-                MIGRATION_4_5
+                MIGRATION_4_5,
+                MIGRATION_5_6,
+                MIGRATION_6_7
                 // Agregar más migraciones según sea necesario
             )
             .fallbackToDestructiveMigration() // TEMPORAL: Descomentar solo en desarrollo

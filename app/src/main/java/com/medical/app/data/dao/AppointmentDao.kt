@@ -26,6 +26,9 @@ interface AppointmentDao : BaseDao<Appointment> {
     @Query("SELECT * FROM appointments WHERE dateTime BETWEEN :startDate AND :endDate ORDER BY dateTime ASC")
     fun getAppointmentsForDateRange(startDate: Date, endDate: Date): Flow<List<Appointment>>
 
+    @Query("SELECT * FROM appointments")
+    suspend fun getAllAppointmentsList(): List<Appointment>
+    
     @Query("""
         SELECT a.*, p.nombre as patientName, p.apellidos as patientLastName
         FROM appointments a

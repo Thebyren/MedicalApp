@@ -23,6 +23,9 @@ interface PacienteDao : BaseDao<Paciente> {
 
     @Query("SELECT * FROM pacientes")
     fun getAllPacientes(): Flow<List<Paciente>>
+    
+    @Query("SELECT * FROM pacientes")
+    suspend fun getAllPacientesList(): List<Paciente>
 
     @Query("SELECT COUNT(*) FROM pacientes WHERE numeroSeguridadSocial = :numeroSeguridadSocial AND id != :excludeId")
     suspend fun existeNumeroSeguridadSocial(numeroSeguridadSocial: String, excludeId: Int = 0): Int

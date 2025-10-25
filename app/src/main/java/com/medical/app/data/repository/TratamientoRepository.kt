@@ -1,6 +1,7 @@
 package com.medical.app.data.repository
 
 import com.medical.app.data.dao.TratamientoDao
+import com.medical.app.data.entities.EntityType
 import com.medical.app.data.entities.Tratamiento
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -8,7 +9,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TratamientoRepository @Inject constructor(
-    private val tratamientoDao: TratamientoDao
+    private val tratamientoDao: TratamientoDao,
+    private val syncRepository: SyncRepository
 ) {
 
     suspend fun getById(id: Int): Tratamiento? {
@@ -24,15 +26,22 @@ class TratamientoRepository @Inject constructor(
     }
 
     suspend fun insert(tratamiento: Tratamiento): Long {
-        return tratamientoDao.insert(tratamiento)
+        val id = tratamientoDao.insert(tratamiento)
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.TRATAMIENTOS, id)
+        return id
     }
 
     suspend fun update(tratamiento: Tratamiento) {
         tratamientoDao.update(tratamiento)
+        // Marcar para sincronización
+        syncRepository.markForSync(EntityType.TRATAMIENTOS, tratamiento.id.toLong())
     }
 
     suspend fun delete(tratamiento: Tratamiento) {
         tratamientoDao.delete(tratamiento)
+        // Marcar como eliminado para sincronización
+        syncRepository.markForSync(EntityType.TRATAMIENTOS, tratamiento.id.toLong())
     }
     
     fun getAllTratamientos(): Flow<List<Tratamiento>> {

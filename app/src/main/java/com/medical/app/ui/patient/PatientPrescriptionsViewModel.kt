@@ -48,7 +48,7 @@ class PatientPrescriptionsViewModel @Inject constructor(
                 }
                 
                 // Cargar recetas del paciente
-                tratamientoRepository.getByPacienteId(patient.id).collect { tratamientos ->
+                tratamientoRepository.getByPacienteId(patient.id.toInt()).collect { tratamientos ->
                     val prescriptions = tratamientos.map { tratamiento ->
                         PatientPrescription(
                             id = tratamiento.id,

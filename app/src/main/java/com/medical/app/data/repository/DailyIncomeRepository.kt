@@ -2,6 +2,7 @@ package com.medical.app.data.repository
 
 import com.medical.app.data.dao.DailyIncomeDao
 import com.medical.app.data.entities.DailyIncome
+import com.medical.app.data.entities.EntityType
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 import javax.inject.Inject
@@ -9,7 +10,8 @@ import javax.inject.Singleton
 
 @Singleton
 class DailyIncomeRepository @Inject constructor(
-    private val dailyIncomeDao: DailyIncomeDao
+    private val dailyIncomeDao: DailyIncomeDao,
+    private val syncRepository: SyncRepository
 ) {
     
     suspend fun updateDailyIncome(doctorId: Long, date: Date, amount: Double) {
@@ -27,6 +29,8 @@ class DailyIncomeRepository @Inject constructor(
                 updatedAt = Date()
             )
             dailyIncomeDao.update(updated)
+            // Marcar para sincronización
+            syncRepository.markForSync(EntityType.DAILY_INCOME, updated.id)
         } else {
             // Crear nuevo registro
             val newIncome = DailyIncome(
@@ -36,7 +40,9 @@ class DailyIncomeRepository @Inject constructor(
                 completedAppointments = 1,
                 updatedAt = Date()
             )
-            dailyIncomeDao.insert(newIncome)
+            val id = dailyIncomeDao.insert(newIncome)
+            // Marcar para sincronización
+            syncRepository.markForSync(EntityType.DAILY_INCOME, id)
         }
     }
     
