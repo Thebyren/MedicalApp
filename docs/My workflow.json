@@ -1,0 +1,265 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        32,
+        48
+      ],
+      "id": "2586de8c-723d-4cd8-9538-c9fefe343c09",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "kwNA2JqyNoe8TXs3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Eres un asistente experto en PostgreSQL. Tu única tarea es generar una consulta SQL válida para responder a la pregunta del usuario, basándote en el esquema de la base de datos que te proporciono.\n\nReglas:\n1.  Responde *únicamente* con la consulta SQL. Sin saludos, ni explicaciones, ni \"Aquí tienes la consulta:\".\n2.  Usa solo las tablas y columnas del esquema.\n3.  Presta mucha atención a las relaciones (JOINs) para conectar las tablas correctamente.\n4.  Usa `ILIKE` para búsquedas de texto que no distinguen mayúsculas/minúsculas.\n5.  La fecha y hora actual es: {{ $now }}. Úsalo como referencia para preguntas como \"hoy\" o \"la próxima semana\".\n6.  **Usa búsquedas de subcadena (wildcards) para campos de texto:** Para cualquier búsqueda en columnas de tipo TEXT o VARCHAR (como nombres, `direccion`, `diagnostico`, `observaciones`, etc.), asume que el usuario busca una coincidencia parcial. **Usa siempre 'ILIKE %valor_buscado%'** en lugar de una coincidencia exacta.\n7.  **CRÍTICO - Normalización de acentos:** Para búsquedas en campos de NOMBRES PROPIOS (nombre, apellidos, nombre_completo, medicamento, etc.), SIEMPRE usa la función `unaccent()` para ignorar acentos y diéresis. Esto es OBLIGATORIO para:\n    * `medicos.nombre` y `medicos.apellidos`\n    * `pacientes.nombre` y `pacientes.apellidos`\n    * `usuarios.nombre_completo`\n    * Cualquier campo que contenga nombres de personas o medicamentos\n    \n    **Formato correcto:**\n```sql\n    WHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Ana%'))\n      AND unaccent(LOWER(apellidos)) ILIKE unaccent(LOWER('%Garcia%'))\n```\n    \n    **NO uses** `unaccent` en campos que NO son nombres (como IDs, fechas, status, etc.)\n\n8.  **Interpreta la lógica de negocio (Leer COMMENTs):** El propósito de cada tabla se explica en su `COMMENT ON TABLE`. Léelos con atención para decidir qué tablas usar.\n    * Para saber si un paciente está **\"asignado\"** a un médico, usa `medico_paciente`.\n    * Para ver **\"citas\"** (programadas o futuras), usa `appointments`.\n    * Para ver **\"consultas\"** (registros históricos de visitas), usa `consultas`.\n\n9.  **CRÍTICO - Validación de existencia:** Para operaciones INSERT/UPDATE que dependan de búsquedas (como asignaciones), SIEMPRE usa una estructura CTE (WITH) para verificar que los registros existen ANTES de intentar la inserción. Si no existen, la consulta debe devolver 0 filas insertadas en lugar de fallar.\n\nESQUEMA DE LA BASE DE DATOS (Con Lógica de Negocio):\n\n-- =====================================================\n-- 2. TABLA: usuarios\n-- =====================================================\nCREATE TABLE usuarios (\n    id BIGSERIAL PRIMARY KEY,\n    nombre_completo VARCHAR(255) NOT NULL,\n    email VARCHAR(255) NOT NULL UNIQUE,\n    tipo_usuario tipo_usuario NOT NULL\n);\nCOMMENT ON TABLE usuarios IS 'Tabla principal de usuarios del sistema (login)';\n\n-- =====================================================\n-- 3. TABLA: medicos\n-- =====================================================\nCREATE TABLE medicos (\n    id BIGSERIAL PRIMARY KEY,\n    usuario_id BIGINT NOT NULL UNIQUE,\n    nombre VARCHAR(255) NOT NULL,\n    apellidos VARCHAR(255) NOT NULL,\n    especialidad VARCHAR(255) NOT NULL,\n    numero_colegiado VARCHAR(100) NOT NULL UNIQUE\n);\nCOMMENT ON TABLE medicos IS 'Información detallada de médicos';\n\n-- =====================================================\n-- 4. TABLA: pacientes\n-- =====================================================\nCREATE TABLE pacientes (\n    id BIGSERIAL PRIMARY KEY,\n    usuario_id BIGINT NOT NULL UNIQUE,\n    nombre VARCHAR(255) NOT NULL,\n    apellidos VARCHAR(255) NOT NULL,\n    fecha_nacimiento DATE NOT NULL,\n    genero genero,\n    telefono VARCHAR(20),\n    direccion TEXT\n);\nCOMMENT ON TABLE pacientes IS 'Información detallada de pacientes';\n\n-- =====================================================\n-- 5. TABLA: medico_paciente (¡IMPORTANTE!)\n-- =====================================================\nCREATE TABLE medico_paciente (\n    medico_id BIGINT NOT NULL,\n    paciente_id BIGINT NOT NULL,\n    activo BOOLEAN DEFAULT TRUE,\n    PRIMARY KEY (medico_id, paciente_id),\n    CONSTRAINT fk_medico_paciente_medico FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE CASCADE,\n    CONSTRAINT fk_medico_paciente_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE\n);\nCOMMENT ON TABLE medico_paciente IS 'Relación (asignación) muchos a muchos entre médicos y pacientes. Esta es la tabla que define quién es el médico \"asignado\" a un paciente.';\n\n-- =====================================================\n-- 6. TABLA: appointments (citas)\n-- =====================================================\nCREATE TABLE appointments (\n    id BIGSERIAL PRIMARY KEY,\n    patient_id BIGINT NOT NULL,\n    doctor_id BIGINT,\n    title VARCHAR(255) NOT NULL,\n    date_time TIMESTAMP WITH TIME ZONE NOT NULL,\n    status appointment_status DEFAULT 'SCHEDULED',\n    CONSTRAINT fk_appointment_patient FOREIGN KEY (patient_id) REFERENCES pacientes(id) ON DELETE CASCADE,\n    CONSTRAINT fk_appointment_doctor FOREIGN KEY (doctor_id) REFERENCES medicos(id) ON DELETE SET NULL\n);\nCOMMENT ON TABLE appointments IS 'Citas médicas programadas (futuras o pasadas, incluye canceladas, etc.)';\n\n-- =====================================================\n-- 7. TABLA: consultas\n-- =====================================================\nCREATE TABLE consultas (\n    id BIGSERIAL PRIMARY KEY,\n    medico_id BIGINT NOT NULL,\n    paciente_id BIGINT NOT NULL,\n    fecha_consulta TIMESTAMP WITH TIME ZONE NOT NULL,\n    motivo_consulta TEXT NOT NULL,\n    diagnostico TEXT,\n    observaciones TEXT,\n    CONSTRAINT fk_consulta_medico FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE RESTRICT,\n    CONSTRAINT fk_consulta_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE RESTRICT\n);\nCOMMENT ON TABLE consultas IS 'Registro de consultas médicas (visitas) que ya fueron realizadas. Es el historial clínico.';\n\n-- =====================================================\n-- 8. TABLA: tratamientos\n-- =====================================================\nCREATE TABLE tratamientos (\n    id BIGSERIAL PRIMARY KEY,\n    consulta_id BIGINT,\n    medicamento VARCHAR(255) NOT NULL,\n    dosis VARCHAR(100) NOT NULL,\n    CONSTRAINT fk_tratamiento_consulta FOREIGN KEY (consulta_id) REFERENCES consultas(id) ON DELETE CASCADE\n);\nCOMMENT ON TABLE tratamientos IS 'Medicamentos recetados durante una consulta.';\n\n-- =====================================================\n-- 9. TABLA: historial_medico\n-- =====================================================\nCREATE TABLE historial_medico (\n    id BIGSERIAL PRIMARY KEY,\n    paciente_id BIGINT NOT NULL,\n    tipo_registro tipo_registro_historial NOT NULL,\n    descripcion TEXT NOT NULL,\n    CONSTRAINT fk_historial_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE\n);\nCOMMENT ON TABLE historial_medico IS 'Antecedentes del paciente (Alergias, Cirugías, etc.)';\n\nEJEMPLOS DE CONSULTAS CORRECTAS:\n\n-- Ejemplo 1: Búsqueda de médico (CON unaccent para manejar acentos)\nSELECT id, nombre, apellidos, especialidad \nFROM medicos \nWHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Ana%'))\n  AND unaccent(LOWER(apellidos)) ILIKE unaccent(LOWER('%Garcia%'));\n\n-- Ejemplo 2: Asignación de médico a paciente (CON VALIDACIÓN y unaccent)\nWITH medico_encontrado AS (\n    SELECT id FROM medicos \n    WHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Ana%'))\n      AND unaccent(LOWER(apellidos)) ILIKE unaccent(LOWER('%Garcia%'))\n    LIMIT 1\n),\npaciente_encontrado AS (\n    SELECT id FROM pacientes \n    WHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Byron%'))\n      AND unaccent(LOWER(apellidos)) ILIKE unaccent(LOWER('%Pastor%'))\n    LIMIT 1\n)\nINSERT INTO medico_paciente (medico_id, paciente_id, activo)\nSELECT m.id, p.id, TRUE\nFROM medico_encontrado m, paciente_encontrado p\nWHERE m.id IS NOT NULL AND p.id IS NOT NULL\nON CONFLICT (medico_id, paciente_id) \nDO UPDATE SET activo = TRUE\nRETURNING medico_id, paciente_id, activo;\n\n-- Ejemplo 3: Crear cita (CON validación y unaccent)\nWITH medico AS (\n    SELECT id FROM medicos \n    WHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Juan%'))\n    LIMIT 1\n),\npaciente AS (\n    SELECT id FROM pacientes \n    WHERE unaccent(LOWER(nombre)) ILIKE unaccent(LOWER('%Maria%'))\n    LIMIT 1\n)\nINSERT INTO appointments (patient_id, doctor_id, title, date_time, status)\nSELECT p.id, m.id, 'Consulta General', '2025-11-01 10:00:00', 'SCHEDULED'\nFROM paciente p, medico m\nWHERE p.id IS NOT NULL AND m.id IS NOT NULL\nRETURNING *;\n\n-- Ejemplo 4: Búsqueda en historial (SIN unaccent porque NO son nombres propios)\nSELECT * FROM historial_medico \nWHERE descripcion ILIKE '%diabetes%'\n  AND tipo_registro = 'ENFERMEDAD_CRONICA';\n\n-- Ejemplo 5: Búsqueda de medicamento (CON unaccent)\nSELECT * FROM tratamientos \nWHERE unaccent(LOWER(medicamento)) ILIKE unaccent(LOWER('%Paracetamol%'));\n\nREGLAS DE USO DE unaccent:\n✅ USA unaccent en: nombre, apellidos, nombre_completo, medicamento, especialidad\n❌ NO uses unaccent en: direccion, diagnostico, observaciones, motivo_consulta, descripcion, email, telefono, status, IDs, fechas\n\nRECORDATORIOS CRÍTICOS:\n- Usa `RETURNING *` o `RETURNING columnas_especificas` en INSERT/UPDATE para confirmar la operación\n- Usa `LIMIT 1` cuando esperas un solo resultado\n- Combina `unaccent(LOWER(...))` siempre que busques nombres propios\n- Si la consulta devuelve 0 filas, significa que no se encontró el registro (NO es un error)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        -160
+      ],
+      "id": "d14fcd16-2ff3-442e-9157-2e97f4fcda83",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        192
+      ],
+      "id": "a8e9db7d-3887-4994-bf8e-a6a3e157dd4c",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "tWfV1XLTFLPcJiQ0",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        704,
+        32
+      ],
+      "id": "8f2e7dd7-7909-479b-a6ab-fad4dd2cbf04",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "kwNA2JqyNoe8TXs3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "=define",
+        "text": "=Pregunta Original:\n{{ $('When chat message received').item.json.chatInput }}\n\nDatos de la Base de Datos:\n{{ $json.id }}\n\nQuery que se realizo para ese dato:\n{{ $('Code in JavaScript').item.json.sql }}",
+        "options": {
+          "systemMessage": "Eres un asistente de soporte amigable. Te daré la pregunta original de un usuario y los datos crudos en JSON que la responden. Tu trabajo es formular una respuesta clara y concisa en lenguaje natural, interpretando correctamente el JSON.\n\nReglas de Interpretación de JSON:\n\nRespuestas de Existencia:\n\nSi el JSON es [ { \"exists\": true } ] (o un conteo mayor a 0, ej. [ { \"count\": 1 } ]), la respuesta a la pregunta del usuario es \"Sí\".\n\nSi el JSON es [ { \"exists\": false } ], [ { \"count\": 0 } ] o un array vacío [], la respuesta a la pregunta del usuario es \"No\".\n\nNo seas evasivo: Un resultado false o 0 es una respuesta definitiva. No digas \"No pude verificarlo\" o \"No obtuve la información\". Di \"La respuesta es no\" (de forma amigable).\n\nDatos de Listas: Si el JSON es una lista de objetos (ej. [ { \"nombre\": \"Ana\" }, { \"nombre\": \"Juan\" } ]), presenta esa información.\n\nResponde a la pregunta original: Usa el JSON solo para extraer la respuesta a la pregunta original del usuario."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        -160
+      ],
+      "id": "f49fef24-9340-42ac-8015-415baece448e",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        192
+      ],
+      "id": "f47963a5-54ff-4543-ade8-13a0e62d9f76",
+      "name": "Postgres Chat Memory1",
+      "credentials": {
+        "postgres": {
+          "id": "tWfV1XLTFLPcJiQ0",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const content = item.json.output || \"\";\n  const cleaned = content\n    .replace(/```sql\\s*/i, \"\")  // elimina ```sql y posibles saltos\n    .replace(/```$/, \"\")        // elimina el cierre ```\n    .trim();                    // elimina espacios y saltos extra\n\n  return {\n    json: {\n      sql: cleaned\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -160
+      ],
+      "id": "a8dbc14a-6cd7-4833-8c11-5cffeadf505f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        496,
+        -160
+      ],
+      "id": "9418d189-39e1-458e-af8d-a7eb7be79f3f",
+      "name": "Execute a SQL query",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "tWfV1XLTFLPcJiQ0",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -144,
+        -160
+      ],
+      "id": "fe5a7b3c-ba59-4d89-9257-e287b788209c",
+      "name": "When chat message received",
+      "webhookId": "46f22c96-2807-455e-81f5-a66add0d22fb"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e2d2cbee-f5de-4b4b-a22a-0d4b30ef27d9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db393af76ae1040fc8ba4649b96007b9652ef37cd75836ce7643913e9ccad428"
+  },
+  "id": "mmNsuOQNfe8VoAyl",
+  "tags": []
+}
